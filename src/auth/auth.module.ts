@@ -1,0 +1,37 @@
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { RolesModule } from '../roles/roles.module.js';
+import { TenantsModule } from '../tenants/tenants.module.js';
+import { UsersModule } from '../users/users.module.js';
+import { AuthController } from './auth.controller.js';
+import { AuthService } from './auth.service.js';
+import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { PermissionsGuard } from './permissions.guard.js';
+import { SuperAdminsModule } from '../super-admins/super-admins.module.js';
+
+@Module({
+  imports: [
+    UsersModule,
+    SuperAdminsModule,
+    RolesModule,
+    TenantsModule,
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (c: ConfigService) => ({
+        secret: c.getOrThrow<string>('JWT_SECRET'),
+        signOptions: { expiresIn: Number(c.get('JWT_EXPIRES_IN_SECONDS') ?? 3600) },
+      }),
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [
+    AuthService,
+    // El orden importa: primero autentica, luego autoriza
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
+  ],
+  exports: [JwtModule]
+})
+export class AuthModule {}
