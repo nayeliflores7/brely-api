@@ -1,3 +1,5 @@
+import type { ClientSession, Model } from 'mongoose';
+
 export interface SyncContext {
   tenantId: string;
   terminalId: string;
@@ -11,10 +13,17 @@ export interface PushOp {
   createdAt: string;
 }
 
-// Cada módulo de negocio (ventas, productos...) registra un handler para su entidad
 export interface PushHandler {
   entity: string;
-  handle(ctx: SyncContext, op: PushOp): Promise<void>;
+  handle(ctx: SyncContext, op: PushOp, session: ClientSession): Promise<void>;
+}
+
+export interface PullDef {
+  model: Model<any>;
+  filter: (ctx: SyncContext) => Record<string, unknown>;
+  select?: string;
+  // Lista blanca explícita: lo que no está aquí nunca sale hacia el POS
+  map: (d: any) => Record<string, unknown>;
 }
 
 // El handler la lanza cuando la operación nunca podrá aplicarse (dato inválido)

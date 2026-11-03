@@ -4,6 +4,7 @@ import { StockMovement, StockMovementSchema } from './schemas/stock-movement.sch
 import { StockController } from './stock.controller.js';
 import { StockService } from './stock.service.js';
 import { SyncModule } from '../sync/sync.module.js';
+import { Product, ProductSchema } from '../products/schemas/product.schema.js';
 
 @Module({
   imports: [

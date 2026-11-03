@@ -21,6 +21,10 @@ export class SyncController {
   @Post('pull')
   @HttpCode(200)
   pull(@CurrentTerminal() t: TerminalContext, @Body() dto: PullDto) {
-    return this.sync.pull({ tenantId: t.tenantId, terminalId: t.id }, dto.cursors, dto.limit);
+    return this.sync.pull(
+      { tenantId: t.tenantId, terminalId: t.id },
+      dto.cursors,
+      dto.limit,
+    );
   }
 }
