@@ -28,6 +28,20 @@ export class Terminal {
   @Prop({ type: Date, default: null })
   lastSeenAt: Date | null;
 
+  // Lo reporta el POS al terminar cada ciclo. lastSeenAt solo dice que se conectó; esto, cómo le fue.
+  // La hora es la del servidor: el reloj de una terminal puede estar mal.
+  @Prop({ type: Date, default: null })
+  lastSyncedAt: Date | null;
+
+  @Prop({ default: false })
+  lastSyncFailed: boolean;
+
+  @Prop({ default: 0 })
+  syncPending: number;
+
+  @Prop({ default: 0 })
+  syncRejected: number;
+
   @Prop({ default: '' })
   deviceInfo: string;
 

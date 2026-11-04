@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import {
-  ArrayMaxSize, IsArray, IsInt, IsISO8601, IsObject, IsOptional, IsString,
+  ArrayMaxSize, IsArray, IsBoolean, IsInt, IsISO8601, IsObject, IsOptional, IsString,
   Max, MaxLength, Min, ValidateNested,
 } from 'class-validator';
 
@@ -24,6 +24,17 @@ export class PushOpDto {
 export class PushDto {
   @IsArray() @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => PushOpDto)
   ops: PushOpDto[];
+}
+
+export class SyncReportDto {
+  @IsBoolean()
+  ok: boolean;
+
+  @IsInt() @Min(0)
+  pending: number;
+
+  @IsInt() @Min(0)
+  rejected: number;
 }
 
 export class PullDto {

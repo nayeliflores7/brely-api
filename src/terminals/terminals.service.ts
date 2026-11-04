@@ -126,6 +126,21 @@ export class TerminalsService {
       .catch(() => undefined);
   }
 
+  async reportSync(id: string, report: { ok: boolean; pending: number; rejected: number }) {
+    await this.model.updateOne(
+      { _id: id },
+      {
+        $set: {
+          lastSyncFailed: !report.ok,
+          syncPending: report.pending,
+          syncRejected: report.rejected,
+          ...(report.ok ? { lastSyncedAt: new Date() } : {}),
+        },
+      },
+      { timestamps: false }, // no es un cambio de la terminal: no debe viajar en el pull
+    );
+  }
+
   // ── helpers ──
   private issueCode() {
     let code = '';
