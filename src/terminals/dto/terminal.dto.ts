@@ -19,4 +19,8 @@ export class ActivateDto {
 
   @IsOptional() @IsString() @MaxLength(200)
   deviceInfo?: string;
+
+  // Una terminal ya activada lo envía al reactivarse: si el código es de otra, no se consume
+  @IsOptional() @IsString() @MaxLength(64)
+  terminalId?: string;
 }

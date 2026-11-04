@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Tenant, TenantDocument } from '../tenants/schemas/tenant.schema.js';
 import { Role, RoleDocument } from '../roles/schemas/role.schema.js';
 import { User, UserDocument } from '../users/schemas/user.schema.js';
@@ -16,7 +16,7 @@ import {
   RejectedOpError,
   SyncContext,
 } from './sync.types.js';
-import { SyncOp, SyncOpDocument } from '../src/sync/schemas/sync-op.schema.js';
+import { SyncOp, SyncOpDocument } from './schemas/sync-op.schema.js';
 
 @Injectable()
 export class SyncService {
@@ -25,7 +25,7 @@ export class SyncService {
   private readonly pullable: Record<string, PullDef>;
 
   constructor(
-    @InjectConnection() private readonly connection: Connection,
+    @InjectConnection() private readonly connection: mongoose.Connection,
     @InjectModel(SyncOp.name) private readonly ops: Model<SyncOpDocument>,
     @InjectModel(Tenant.name) tenants: Model<TenantDocument>,
     @InjectModel(Role.name) roles: Model<RoleDocument>,

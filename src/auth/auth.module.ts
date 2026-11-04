@@ -6,6 +6,7 @@ import { RolesModule } from '../roles/roles.module.js';
 import { TenantsModule } from '../tenants/tenants.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { AuthController } from './auth.controller.js';
+import { TenantProvisioningController } from './tenant-provisioning.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { PermissionsGuard } from './permissions.guard.js';
@@ -25,7 +26,7 @@ import { SuperAdminsModule } from '../super-admins/super-admins.module.js';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, TenantProvisioningController],
   providers: [
     AuthService,
     // El orden importa: primero autentica, luego autoriza

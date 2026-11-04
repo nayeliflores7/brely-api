@@ -63,19 +63,44 @@ export class UsersService {
     }
   }
 
-  findAll(tenantId: string) {
-    return this.model
+  async findAll(tenantId: string) {
+    const users = await this.model
       .find({ tenantId, deletedAt: null })
+      .select('+pinHash')
       .sort({ fullName: 1 })
       .lean();
+    return users.map((user) => this.toView(user));
   }
 
   async findOne(tenantId: string, id: string) {
     const user = await this.model
       .findOne({ _id: id, tenantId, deletedAt: null })
+      .select('+pinHash')
       .lean();
     if (!user) throw new NotFoundException(`User ${id} not found`);
-    return user;
+    return this.toView(user);
+  }
+
+  // Lo mínimo para asignar un rol: quien gestiona usuarios no siempre puede gestionar roles
+  async roleOptions(tenantId: string) {
+    const roles = await this.roleModel
+      .find({ tenantId, deletedAt: null })
+      .select('name permissions')
+      .sort({ name: 1 })
+      .lean();
+    return roles.map((role) => ({
+      _id: role._id,
+      name: role.name,
+      adminAccess: role.permissions.includes('admin.access'),
+    }));
+  }
+
+  // Lista blanca de credenciales: se informa si hay PIN, pero nunca sale ningún hash
+  private toView<T extends { pinHash?: string; pinSalt?: string; passwordHash?: string }>(
+    user: T,
+  ) {
+    const { pinHash, pinSalt, passwordHash, ...rest } = user;
+    return { ...rest, hasPin: !!pinHash };
   }
 
   async update(tenantId: string, id: string, dto: UpdateUserDto) {
@@ -163,7 +188,7 @@ export class UsersService {
       .find({
         tenantId,
         deletedAt: null,
-        permissions: { $all: ['admin:access', 'users:manage'] },
+        permissions: { $all: ['admin.access', 'users.manage'] },
       })
       .distinct('_id');
 

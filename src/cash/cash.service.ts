@@ -4,7 +4,7 @@ import {
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
 import type { ClientSession } from 'mongoose';
-import { Connection, Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { CashSession, CashSessionDocument } from './schemas/cash-session.schema.js';
 import { CashMovement, CashMovementDocument } from './schemas/cash-movement.schema.js';
 import { Sale, SaleDocument } from '../sales/schemas/sale.schema.js';
@@ -20,7 +20,7 @@ import { round2 } from '../common/money.js';
 @Injectable()
 export class CashService implements OnModuleInit {
   constructor(
-    @InjectConnection() private readonly connection: Connection,
+    @InjectConnection() private readonly connection: mongoose.Connection,
     @InjectModel(CashSession.name) private readonly sessions: Model<CashSessionDocument>,
     @InjectModel(CashMovement.name) private readonly movements: Model<CashMovementDocument>,
     @InjectModel(Sale.name) private readonly sales: Model<SaleDocument>,

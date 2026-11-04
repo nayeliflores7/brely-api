@@ -4,6 +4,7 @@ import { Category, CategorySchema } from './schemas/category.schema.js';
 import { Product, ProductSchema } from '../products/schemas/product.schema.js';
 import { CategoriesController } from './categories.controller.js';
 import { CategoriesService } from './categories.service.js';
+import { CategoryPushHandler } from './category-push.handler.js';
 import { SyncModule } from '../sync/sync.module.js';
 
 @Module({
@@ -15,7 +16,7 @@ import { SyncModule } from '../sync/sync.module.js';
     SyncModule,
   ],
   controllers: [CategoriesController],
-  providers: [CategoriesService],
+  providers: [CategoriesService, CategoryPushHandler],
   exports: [CategoriesService],
 })
 export class CategoriesModule {}

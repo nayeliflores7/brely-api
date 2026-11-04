@@ -21,7 +21,7 @@ import {
 import type { AuthUser } from '../common/auth.types.js';
 
 @Controller('roles')
-@RequirePermissions('roles:manage')
+@RequirePermissions('roles.manage')
 export class RolesController {
   constructor(
     private readonly roles: RolesService,
@@ -48,37 +48,20 @@ export class RolesController {
   }
 
   @Patch(':id')
-  async update(
+  update(
     @TenantId() tenantId: string,
-    @CurrentUser() u: AuthUser,
     @Param('id') id: string,
     @Body() dto: UpdateRoleDto,
   ) {
-    if (dto.permissions) {
-      const current = await this.roles.findOne(tenantId, id);
-      const critical = ['admin.access', 'users.manage'];
-      const losesCritical = critical.some(
-        (p) => current.permissions.includes(p) && !dto.permissions!.includes(p),
-      );
-      if (losesCritical && (await this.users.countByRole(tenantId, id))) {
-        throw new ConflictException(
-          'Cannot remove admin.access/users.manage from a role in use',
-        );
-      }
-    }
-    return this.roles.update(tenantId, id, dto, u.isSuperAdmin);
+    return this.roles.update(tenantId, id, dto);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  async remove(
-    @TenantId() tenantId: string,
-    @CurrentUser() u: AuthUser,
-    @Param('id') id: string,
-  ) {
+  async remove(@TenantId() tenantId: string, @Param('id') id: string) {
     if (await this.users.countByRole(tenantId, id)) {
       throw new ConflictException('Role is assigned to active users');
     }
-    return this.roles.softDelete(tenantId, id, u.isSuperAdmin);
+    return this.roles.softDelete(tenantId, id);
   }
 }

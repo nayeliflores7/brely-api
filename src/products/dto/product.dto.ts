@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { Type } from 'class-transformer';
 import {
-  IsBoolean, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength,
+  IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -39,6 +39,12 @@ export class CreateProductDto {
   active?: boolean;
 }
 
+// Alta desde el panel: el POS registra su stock inicial con un movimiento propio
+export class CreateProductWithStockDto extends CreateProductDto {
+  @IsOptional() @IsNumber() @Min(0)
+  initialStock?: number;
+}
+
 export class UpdateProductDto extends PartialType(CreateProductDto) {}
 
 // Lo que llega en el payload del outbox (el id lo genera el POS)
@@ -64,6 +70,12 @@ export class ListProductsQuery {
 
   @IsOptional() @IsString()
   categoryId?: string;
+
+  @IsOptional() @IsIn(['name', 'barcode', 'price', 'stock', 'active'])
+  sort?: 'name' | 'barcode' | 'price' | 'stock' | 'active';
+
+  @IsOptional() @IsIn(['asc', 'desc'])
+  dir?: 'asc' | 'desc';
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1)
   page?: number;

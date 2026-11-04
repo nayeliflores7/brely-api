@@ -16,7 +16,8 @@ export class TenantsService {
   }
 
   findAll() {
-    return this.model.find({ deletedAt: null }).sort({ name: 1 }).lean();
+    // Incluye los desactivados para poder restaurarlos. Sin logo: pesa y el listado no lo usa.
+    return this.model.find().select('-logo').sort({ name: 1 }).lean();
   }
 
   async findOne(id: string) {
@@ -34,6 +35,14 @@ export class TenantsService {
   async update(id: string, dto: UpdateTenantDto) {
     const tenant = await this.model
       .findOneAndUpdate({ _id: id, deletedAt: null }, dto, { new: true })
+      .lean();
+    if (!tenant) throw new NotFoundException(`Tenant ${id} not found`);
+    return tenant;
+  }
+
+  async restore(id: string) {
+    const tenant = await this.model
+      .findOneAndUpdate({ _id: id }, { deletedAt: null }, { new: true })
       .lean();
     if (!tenant) throw new NotFoundException(`Tenant ${id} not found`);
     return tenant;

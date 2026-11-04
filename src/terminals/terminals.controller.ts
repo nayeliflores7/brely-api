@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
-import { TerminalsService } from './terminals.service.js';
+import { TerminalsService, type TerminalWithCode } from './terminals.service.js';
 import { ActivateDto, CreateTerminalDto, UpdateTerminalDto } from './dto/terminal.dto.js';
 import { Public, RequirePermissions, TenantId } from '../common/decorators.js';
 
@@ -17,7 +17,7 @@ export class TerminalsController {
 
   @Post()
   @RequirePermissions('terminals.manage')
-  create(@TenantId() tenantId: string, @Body() dto: CreateTerminalDto) {
+  create(@TenantId() tenantId: string, @Body() dto: CreateTerminalDto): Promise<TerminalWithCode> {
     return this.terminals.create(tenantId, dto);
   }
 
@@ -36,7 +36,7 @@ export class TerminalsController {
   @Post(':id/reset-activation')
   @HttpCode(200)
   @RequirePermissions('terminals.manage')
-  reset(@TenantId() tenantId: string, @Param('id') id: string) {
+  reset(@TenantId() tenantId: string, @Param('id') id: string): Promise<TerminalWithCode> {
     return this.terminals.resetActivation(tenantId, id);
   }
 

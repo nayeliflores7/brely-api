@@ -14,6 +14,7 @@ import { StockModule } from './stock/stock.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
 import { ProductsModule } from './products/products.module.js';
 import { UnitsModule } from './units/units.module.js';
+import { SeedModule } from './seed/seed.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { UnitsModule } from './units/units.module.js';
     UnitsModule,
     CategoriesModule,
     ProductsModule,
+    SeedModule,
   ],
 })
 export class AppModule {}

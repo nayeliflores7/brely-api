@@ -4,7 +4,7 @@ import {
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
 import type { ClientSession } from 'mongoose';
-import { Connection, Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Sale, SaleDocument } from './schemas/sale.schema.js';
 import { Product, ProductDocument } from '../products/schemas/product.schema.js';
 import { Terminal, TerminalDocument } from '../terminals/schemas/terminal.schema.js';
@@ -23,7 +23,7 @@ import { round2 } from '../common/money.js';
 @Injectable()
 export class SalesService implements OnModuleInit {
   constructor(
-    @InjectConnection() private readonly connection: Connection,
+    @InjectConnection() private readonly connection: mongoose.Connection,
     @InjectModel(Sale.name) private readonly model: Model<SaleDocument>,
     @InjectModel(Product.name) private readonly products: Model<ProductDocument>,
     @InjectModel(Terminal.name) private readonly terminals: Model<TerminalDocument>,

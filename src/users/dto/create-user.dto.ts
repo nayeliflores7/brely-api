@@ -16,7 +16,7 @@ export class CreateUserDto {
   @IsString() @MinLength(8) @MaxLength(100)
   password?: string;
 
-  @IsOptional() @Matches(/^\d{4,6}$/, { message: 'pin must be 4 to 6 digits' })
+  @IsOptional() @Matches(/^\d{6}$/, { message: 'pin must be 6 digits' })
   pin?: string;
 
   @IsOptional() @IsBoolean()

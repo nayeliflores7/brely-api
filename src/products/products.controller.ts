@@ -2,33 +2,52 @@ import {
   Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service.js';
-import { CreateProductDto, ListProductsQuery, UpdateProductDto } from './dto/product.dto.js';
+import { CreateProductWithStockDto, ListProductsQuery, UpdateProductDto } from './dto/product.dto.js';
 import { CurrentUser, RequirePermissions, TenantId } from '../common/decorators.js';
 import type { AuthUser } from '../common/auth.types.js';
+
+// Igual que en el POS: los costos son para quien tiene costs.view o administra productos
+function forViewer<T extends { cost: number }>(product: T, user: AuthUser): T {
+  const seesCosts =
+    user.isSuperAdmin ||
+    user.permissions.includes('costs.view') ||
+    user.permissions.includes('products.manage');
+  return seesCosts ? product : { ...product, cost: 0 };
+}
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
   @Get()
-  findAll(@TenantId() tenantId: string, @Query() q: ListProductsQuery) {
-    return this.products.findAll(tenantId, q);
+  async findAll(
+    @TenantId() tenantId: string,
+    @CurrentUser() u: AuthUser,
+    @Query() q: ListProductsQuery,
+  ) {
+    const result = await this.products.findAll(tenantId, q);
+    return { ...result, items: result.items.map((p) => forViewer(p, u)) };
   }
 
   @Get(':id')
-  findOne(@TenantId() tenantId: string, @Param('id') id: string) {
-    return this.products.findOne(tenantId, id);
+  async findOne(@TenantId() tenantId: string, @CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return forViewer(await this.products.findOne(tenantId, id), u);
   }
 
   @Get(':id/price-history')
+  @RequirePermissions('products.manage')
   priceHistory(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.products.priceHistory(tenantId, id);
   }
 
   @Post()
   @RequirePermissions('products.create')
-  create(@TenantId() tenantId: string, @CurrentUser() u: AuthUser, @Body() dto: CreateProductDto) {
-    return this.products.create(tenantId, dto, { userId: u.id });
+  create(
+    @TenantId() tenantId: string,
+    @CurrentUser() u: AuthUser,
+    @Body() dto: CreateProductWithStockDto,
+  ) {
+    return this.products.createWithStock(tenantId, dto, u.id);
   }
 
   @Patch(':id')

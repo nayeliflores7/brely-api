@@ -8,7 +8,7 @@ import { RequirePermissions, TenantId  } from '../common/decorators.js';
 
 
 @Controller('users')
-@RequirePermissions('users:manage')
+@RequirePermissions('users.manage')
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
@@ -20,6 +20,11 @@ export class UsersController {
   @Get()
   findAll(@TenantId() tenantId: string) {
     return this.users.findAll(tenantId);
+  }
+
+  @Get('role-options')
+  roleOptions(@TenantId() tenantId: string) {
+    return this.users.roleOptions(tenantId);
   }
 
   @Get(':id')

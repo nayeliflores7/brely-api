@@ -11,7 +11,7 @@ import { RolesService } from '../roles/roles.service.js';
 import { TenantsService } from '../tenants/tenants.service.js';
 import { UsersService } from '../users/users.service.js';
 import { LoginDto } from './dto/login.dto.js';
-import { RegisterDto } from './dto/register.dto.js';
+import { CreateTenantWithOwnerDto } from './dto/create-tenant-with-owner.dto.js';
 import { SuperAdminsService } from '../super-admins/super-admins.service.js';
 
 @Injectable()
@@ -69,29 +69,20 @@ export class AuthService {
   }
 
   // Crea tenant + roles base + primer owner
-  async register(dto: RegisterDto) {
+  // Solo el super admin da de alta negocios. Crea el negocio, sus roles base y su propietario.
+  async createTenant({ owner, ...fields }: CreateTenantWithOwnerDto) {
     if (
-      (await this.users.emailExists(dto.email)) ||
-      (await this.superAdmins.emailExists(dto.email))
+      (await this.users.emailExists(owner.email)) ||
+      (await this.superAdmins.emailExists(owner.email))
     ) {
       throw new ConflictException('Email already in use');
     }
 
-    const tenant = await this.tenants.create({ name: dto.tenantName });
+    const tenant = await this.tenants.create(fields);
     try {
       const [ownerRole] = await this.roles.seedSystemRoles(tenant._id);
-      const user = await this.users.create(tenant._id, {
-        fullName: dto.fullName,
-        roleId: ownerRole._id,
-        email: dto.email,
-        password: dto.password,
-      });
-      return this.issue(
-        user._id,
-        tenant._id,
-        user.fullName,
-        ownerRole.permissions,
-      );
+      await this.users.create(tenant._id, { ...owner, roleId: ownerRole._id });
+      return tenant.toObject();
     } catch (e) {
       await this.tenants.remove(tenant._id).catch(() => undefined); // compensación (sin transacción)
       throw e;

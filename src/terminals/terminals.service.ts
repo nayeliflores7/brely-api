@@ -10,6 +10,10 @@ import { ActivateDto, CreateTerminalDto, UpdateTerminalDto } from './dto/termina
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Tipo explícito: evita que TS intente serializar los tipos gigantes de Mongoose (TS7056)
+export type TerminalView = Record<string, any>;
+export type TerminalWithCode = TerminalView & { activationCode: string; activationExpiresAt: Date };
+
 @Injectable()
 export class TerminalsService {
   constructor(
@@ -17,7 +21,7 @@ export class TerminalsService {
     private readonly jwt: JwtService,
   ) {}
 
-  async create(tenantId: string, dto: CreateTerminalDto) {
+  async create(tenantId: string, dto: CreateTerminalDto): Promise<TerminalWithCode> {
     const c = this.issueCode();
     const doc = await this.model.create({
       tenantId,
@@ -42,7 +46,7 @@ export class TerminalsService {
   }
 
   // Reinstalación: invalida el token actual y genera un código nuevo
-  async resetActivation(tenantId: string, id: string) {
+  async resetActivation(tenantId: string, id: string): Promise<TerminalWithCode> {
     const c = this.issueCode();
     const t = await this.model
       .findOneAndUpdate(
@@ -77,6 +81,7 @@ export class TerminalsService {
     const t = await this.model
       .findOneAndUpdate(
         {
+          ...(dto.terminalId ? { _id: dto.terminalId } : {}),
           activationCodeHash: this.hash(dto.code),
           activationExpiresAt: { $gt: now },
           activatedAt: null,
@@ -128,7 +133,7 @@ export class TerminalsService {
       .digest('hex');
   }
 
-  private strip<T extends Record<string, any>>(t: T) {
+  private strip(t: Record<string, any>): TerminalView {
     const { activationCodeHash, ...rest } = t;
     return rest;
   }

@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   Patch,
+  Post,
 } from '@nestjs/common';
 import { TenantsService } from './tenants.service.js';
 import { UpdateTenantDto } from './dto/update-tenant.dto.js';
@@ -47,6 +48,13 @@ export class TenantsController {
   @SuperAdminOnly()
   update(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
     return this.tenants.update(id, dto);
+  }
+
+  @Post(':id/restore')
+  @SuperAdminOnly()
+  @HttpCode(200)
+  restore(@Param('id') id: string) {
+    return this.tenants.restore(id);
   }
 
   @Delete(':id')

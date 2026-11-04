@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
 import type { ClientSession } from 'mongoose';
-import { Connection, Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { StockMovement, StockMovementDocument } from './schemas/stock-movement.schema.js';
 import { Product, ProductDocument } from '../products/schemas/product.schema.js';
 import { CreateStockMovementDto, ListStockQuery } from './dto/stock.dto.js';
@@ -27,7 +27,7 @@ export interface ApplyInput {
 @Injectable()
 export class StockService implements OnModuleInit {
   constructor(
-    @InjectConnection() private readonly connection: Connection,
+    @InjectConnection() private readonly connection: mongoose.Connection,
     @InjectModel(StockMovement.name) private readonly model: Model<StockMovementDocument>,
     @InjectModel(Product.name) private readonly products: Model<ProductDocument>,
     private readonly sync: SyncService,
@@ -91,6 +91,10 @@ export class StockService implements OnModuleInit {
   async createManual(tenantId: string, userId: string, dto: CreateStockMovementDto) {
     const product = await this.products.findOne({ _id: dto.productId, tenantId, deletedAt: null }).lean();
     if (!product) throw new NotFoundException(`Product ${dto.productId} not found`);
+    if (!product.trackStock) throw new BadRequestException('This product does not track stock');
+    const needsReason =
+      dto.type === 'waste' || (dto.type === 'adjustment' && dto.countedStock === undefined);
+    if (needsReason && !dto.reason?.trim()) throw new BadRequestException('reason is required');
 
     let quantity = dto.quantity;
     if (dto.type === 'adjustment' && dto.countedStock !== undefined) {

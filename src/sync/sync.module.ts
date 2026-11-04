@@ -9,7 +9,7 @@ import { PermissionEntity, PermissionSchema } from '../permissions/schemas/permi
 import { AuthModule } from '../auth/auth.module.js';
 import { TerminalsModule } from '../terminals/terminals.module.js';
 import { TenantsModule } from '../tenants/tenants.module.js';
-import { SyncOp, SyncOpSchema } from '../src/sync/schemas/sync-op.schema.js';
+import { SyncOp, SyncOpSchema } from './schemas/sync-op.schema.js';
 
 @Module({
   imports: [

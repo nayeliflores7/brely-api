@@ -18,7 +18,7 @@ export class CategoriesService implements OnModuleInit {
   onModuleInit() {
     this.sync.registerPull('categories', {
       model: this.model,
-      filter: (t) => ({ tenantId: t }),
+      filter: (c) => ({ tenantId: c.tenantId }),
       map: (d) => ({
         id: d._id, name: d.name, active: d.active,
         updatedAt: d.updatedAt, deletedAt: d.deletedAt,
@@ -26,16 +26,37 @@ export class CategoriesService implements OnModuleInit {
     });
   }
 
-  async create(tenantId: string, dto: CreateCategoryDto) {
+  async create(
+    tenantId: string,
+    dto: CreateCategoryDto,
+    opts: { id?: string; session?: ClientSession } = {},
+  ) {
     try {
-      return (await this.model.create({ ...dto, tenantId })).toObject();
+      const [doc] = await this.model.create(
+        [{ ...dto, tenantId, ...(opts.id ? { _id: opts.id } : {}) }],
+        { session: opts.session },
+      );
+      return doc.toObject();
     } catch (e) {
       this.rethrowDuplicate(e);
     }
   }
 
-  findAll(tenantId: string) {
-    return this.model.find({ tenantId, deletedAt: null }).sort({ name: 1 }).lean();
+  async findAll(tenantId: string) {
+    const [categories, counts] = await Promise.all([
+      this.model.find({ tenantId, deletedAt: null }).sort({ name: 1 }).lean(),
+      this.products.aggregate<{ _id: string; n: number }>([
+        { $match: { tenantId, deletedAt: null, categoryId: { $ne: null } } },
+        { $group: { _id: '$categoryId', n: { $sum: 1 } } },
+      ]),
+    ]);
+    const usage = new Map(counts.map((row) => [row._id, row.n]));
+    return categories.map((c) => ({ ...c, productCount: usage.get(c._id) ?? 0 }));
+  }
+
+  // Para buscar productos por el nombre de su categoría
+  async idsMatching(tenantId: string, name: RegExp): Promise<string[]> {
+    return this.model.find({ tenantId, deletedAt: null, name }).distinct('_id');
   }
 
   async findOne(tenantId: string, id: string) {
@@ -44,10 +65,15 @@ export class CategoriesService implements OnModuleInit {
     return c;
   }
 
-  async update(tenantId: string, id: string, dto: UpdateCategoryDto) {
+  // Para el push del POS: incluye borradas y de otros tenants
+  findAnyById(id: string, session?: ClientSession) {
+    return this.model.findById(id).session(session ?? null).lean();
+  }
+
+  async update(tenantId: string, id: string, dto: UpdateCategoryDto, session?: ClientSession) {
     try {
       const c = await this.model
-        .findOneAndUpdate({ _id: id, tenantId, deletedAt: null }, dto, { new: true })
+        .findOneAndUpdate({ _id: id, tenantId, deletedAt: null }, dto, { new: true, session })
         .lean();
       if (!c) throw new NotFoundException(`Category ${id} not found`);
       return c;
@@ -56,19 +82,26 @@ export class CategoriesService implements OnModuleInit {
     }
   }
 
-  async remove(tenantId: string, id: string) {
-    if (await this.products.exists({ tenantId, categoryId: id, deletedAt: null })) {
+  async remove(tenantId: string, id: string, session?: ClientSession) {
+    if (
+      await this.products
+        .exists({ tenantId, categoryId: id, deletedAt: null })
+        .session(session ?? null)
+    ) {
       throw new ConflictException('Category has products');
     }
     const c = await this.model.findOneAndUpdate(
       { _id: id, tenantId, deletedAt: null },
       { deletedAt: new Date(), active: false },
+      { session },
     );
     if (!c) throw new NotFoundException(`Category ${id} not found`);
   }
 
-  async exists(tenantId: string, id: string, session?: ClientSession) {
-    return !!(await this.model.exists({ _id: id, tenantId, deletedAt: null }).session(session ?? null));
+  async existsActive(tenantId: string, id: string, session?: ClientSession) {
+    return !!(await this.model
+      .exists({ _id: id, tenantId, deletedAt: null, active: true })
+      .session(session ?? null));
   }
 
   private rethrowDuplicate(e: any): never {
