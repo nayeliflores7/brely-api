@@ -27,6 +27,7 @@ function setUp(opts: { emailTaken?: boolean; userFails?: boolean } = {}) {
       },
     } as never,
     { signAsync: async () => 'token' } as never,
+    { record: async () => undefined } as never,
   );
   return { service, calls };
 }

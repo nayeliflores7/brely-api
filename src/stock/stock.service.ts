@@ -1,3 +1,4 @@
+import { UsersService } from '../users/users.service.js';
 import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
@@ -31,6 +32,7 @@ export class StockService implements OnModuleInit {
     @InjectModel(StockMovement.name) private readonly model: Model<StockMovementDocument>,
     @InjectModel(Product.name) private readonly products: Model<ProductDocument>,
     private readonly sync: SyncService,
+    private readonly users: UsersService,
   ) {}
 
   onModuleInit() {
@@ -79,12 +81,33 @@ export class StockService implements OnModuleInit {
     const f: Record<string, unknown> = { tenantId };
     if (q.productId) f.productId = q.productId;
     if (q.type) f.type = q.type;
+    if (q.terminalId) f.terminalId = q.terminalId;
+    if (q.from || q.to) {
+      f.occurredAt = {
+        ...(q.from ? { $gte: new Date(q.from) } : {}),
+        ...(q.to ? { $lte: new Date(q.to) } : {}),
+      };
+    }
     const limit = q.limit ?? 50;
     const page = q.page ?? 1;
-    const [items, total] = await Promise.all([
-      this.model.find(f).sort({ occurredAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+    const [movements, total] = await Promise.all([
+      this.model.find(f).sort({ occurredAt: -1, _id: 1 }).skip((page - 1) * limit).limit(limit).lean(),
       this.model.countDocuments(f),
     ]);
+
+    // Incluye productos eliminados: su historial sigue siendo válido
+    const products = await this.products
+      .find({ _id: { $in: [...new Set(movements.map((m) => m.productId))] } })
+      .select('name barcode')
+      .lean();
+    const byId = new Map(products.map((p) => [p._id, p]));
+    const names = await this.users.displayNames(movements.map((m) => m.createdBy));
+    const items = movements.map((m) => ({
+      ...m,
+      productName: byId.get(m.productId)?.name ?? '',
+      productBarcode: byId.get(m.productId)?.barcode ?? '',
+      createdByName: m.createdBy ? (names.get(m.createdBy) ?? '') : '',
+    }));
     return { items, total, page, limit };
   }
 

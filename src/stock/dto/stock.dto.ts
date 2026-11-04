@@ -30,6 +30,9 @@ export class CreateStockMovementDto {
 
 export class ListStockQuery {
   @IsOptional() @IsString() productId?: string;
+  @IsOptional() @IsString() terminalId?: string;
+  @IsOptional() @IsISO8601() from?: string;
+  @IsOptional() @IsISO8601() to?: string;
   @IsOptional() @IsIn(STOCK_TYPES) type?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(200) limit?: number;

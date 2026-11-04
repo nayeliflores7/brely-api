@@ -9,21 +9,19 @@ import { CategoriesModule } from '../categories/categories.module.js';
 import { UnitsModule } from '../units/units.module.js';
 import { SyncModule } from '../sync/sync.module.js';
 import { StockModule } from '../stock/stock.module.js';
-import { SuperAdminsModule } from '../super-admins/super-admins.module.js';
-import { User, UserSchema } from '../users/schemas/user.schema.js';
+import { UsersModule } from '../users/users.module.js';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Product.name, schema: ProductSchema },
       { name: PriceHistory.name, schema: PriceHistorySchema },
-      { name: User.name, schema: UserSchema },
     ]),
     CategoriesModule,
     UnitsModule,
     SyncModule,
     StockModule,
-    SuperAdminsModule,
+    UsersModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService, ProductPushHandler],

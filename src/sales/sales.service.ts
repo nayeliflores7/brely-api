@@ -1,3 +1,4 @@
+import { UsersService } from '../users/users.service.js';
 import {
   BadRequestException, ConflictException, Injectable, NotFoundException, OnModuleInit,
 } from '@nestjs/common';
@@ -31,6 +32,7 @@ export class SalesService implements OnModuleInit {
     private readonly stock: StockService,
     private readonly cash: CashService,
     private readonly sync: SyncService,
+    private readonly users: UsersService,
   ) {}
 
   onModuleInit() {
@@ -224,6 +226,7 @@ export class SalesService implements OnModuleInit {
     if (q.terminalId) f.terminalId = q.terminalId;
     if (q.status) f.status = q.status;
     if (q.origin) f.origin = q.origin;
+    if (q.folio) f.folio = q.folio;
     if (q.from || q.to) {
       f.soldAt = {};
       if (q.from) f.soldAt.$gte = new Date(q.from);
@@ -231,17 +234,44 @@ export class SalesService implements OnModuleInit {
     }
     const limit = q.limit ?? 50;
     const page = q.page ?? 1;
-    const [items, total] = await Promise.all([
-      this.model.find(f).sort({ soldAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+    const [items, total, totals] = await Promise.all([
+      this.model.find(f).sort({ soldAt: -1, _id: 1 }).skip((page - 1) * limit).limit(limit).lean(),
       this.model.countDocuments(f),
+      // De todo el resultado, no de la página. Las canceladas no cuentan como venta.
+      this.model.aggregate<{ count: number; amount: number }>([
+        { $match: { ...f, status: q.status ?? 'completed', ...(q.status === 'cancelled' ? { _id: null } : {}) } },
+        { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: '$total' } } },
+      ]),
     ]);
-    return { items, total, page, limit };
+    const count = totals[0]?.count ?? 0;
+    const amount = round2(totals[0]?.amount ?? 0);
+    return {
+      items: await this.withNames(items),
+      total,
+      page,
+      limit,
+      summary: { count, total: amount, average: count ? round2(amount / count) : 0 },
+    };
   }
 
   async findOne(tenantId: string, id: string) {
     const s = await this.model.findOne({ _id: id, tenantId }).lean();
     if (!s) throw new NotFoundException(`Sale ${id} not found`);
-    return s;
+    const [named] = await this.withNames([s]);
+    return named;
+  }
+
+  private async withNames<T extends { createdBy: string | null; createdByName: string; cancelledBy: string | null }>(
+    sales: T[],
+  ) {
+    const names = await this.users.displayNames(
+      sales.flatMap((sale) => [sale.createdBy, sale.cancelledBy]),
+    );
+    return sales.map((sale) => ({
+      ...sale,
+      createdByName: sale.createdByName || (sale.createdBy ? (names.get(sale.createdBy) ?? '') : ''),
+      cancelledByName: sale.cancelledBy ? (names.get(sale.cancelledBy) ?? '') : '',
+    }));
   }
 
   // ── helpers ──

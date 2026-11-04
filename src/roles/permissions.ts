@@ -8,6 +8,7 @@ export const PERMISSION_CATALOG = [
   { key: 'settings.manage', scope: 'admin', name: 'Configurar el negocio', description: 'Editar los datos del negocio' },
   { key: 'terminals.manage', scope: 'admin', name: 'Administrar terminales', description: 'Crear, deshabilitar y restablecer terminales' },
   { key: 'cash.manage', scope: 'admin', name: 'Cerrar cajas desde el panel', description: 'Cerrar una caja de cualquier terminal desde el panel web' },
+  { key: 'audit.view', scope: 'admin', name: 'Ver la auditoría', description: 'Consultar quién hizo qué y cuándo en el negocio' },
 
   // ── Punto de venta ──
   { key: 'sales.create', scope: 'pos', name: 'Vender', description: 'Registrar ventas' },
@@ -30,6 +31,7 @@ export type Permission = (typeof PERMISSION_CATALOG)[number]['key'];
 export const PERMISSIONS = PERMISSION_CATALOG.map((p) => p.key) as readonly Permission[];
 
 const NOT_FOR_MANAGERS: readonly Permission[] = [
+  'audit.view',
   'users.manage',
   'roles.manage',
   'settings.manage',

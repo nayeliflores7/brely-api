@@ -142,6 +142,19 @@ export class UsersService {
     );
   }
 
+  // Nombres para mostrar a partir de los ids guardados en ventas, cortes y movimientos.
+  // Incluye usuarios dados de baja: el registro histórico conserva quién lo hizo.
+  async displayNames(ids: (string | null | undefined)[]) {
+    const unique = [...new Set(ids.filter((id): id is string => !!id))];
+    const users = await this.model.find({ _id: { $in: unique } }).select('fullName').lean();
+    const names = new Map<string, string>(users.map((user) => [user._id, user.fullName]));
+    for (const id of unique.filter((id) => !names.has(id))) {
+      const admin = await this.superAdmins.findActiveById(id);
+      if (admin) names.set(id, admin.fullName);
+    }
+    return names;
+  }
+
   countByRole(tenantId: string, roleId: string) {
     return this.model.countDocuments({ tenantId, roleId, deletedAt: null });
   }

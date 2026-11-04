@@ -1,3 +1,4 @@
+import { UsersService } from '../users/users.service.js';
 import {
   BadRequestException, ConflictException, Injectable, NotFoundException, OnModuleInit,
 } from '@nestjs/common';
@@ -25,6 +26,7 @@ export class CashService implements OnModuleInit {
     @InjectModel(CashMovement.name) private readonly movements: Model<CashMovementDocument>,
     @InjectModel(Sale.name) private readonly sales: Model<SaleDocument>,
     private readonly sync: SyncService,
+    private readonly users: UsersService,
   ) {}
 
   onModuleInit() {
@@ -119,11 +121,35 @@ export class CashService implements OnModuleInit {
   }
 
   // ───────── Admin ─────────
-  listSessions(tenantId: string, q: ListSessionsQuery) {
+  async listSessions(tenantId: string, q: ListSessionsQuery) {
     const f: Record<string, unknown> = { tenantId };
     if (q.terminalId) f.terminalId = q.terminalId;
     if (q.status) f.status = q.status;
-    return this.sessions.find(f).sort({ openedAt: -1 }).limit(q.limit ?? 50).lean();
+    const limit = q.limit ?? 50;
+    const page = q.page ?? 1;
+    const [sessions, total] = await Promise.all([
+      this.sessions.find(f).sort({ openedAt: -1, _id: 1 }).skip((page - 1) * limit).limit(limit).lean(),
+      this.sessions.countDocuments(f),
+    ]);
+    // Un turno abierto aún no guarda su corte: se calcula para ver cómo va
+    const items = await Promise.all(
+      sessions.map(async (s) => ({
+        ...s,
+        summary: s.status === 'open' ? await this.summary(tenantId, s._id) : s.summary,
+      })),
+    );
+    return { items: await this.withSessionNames(items), total, page, limit };
+  }
+
+  private async withSessionNames<T extends { openedBy?: string | null; closedBy?: string | null }>(
+    sessions: T[],
+  ) {
+    const names = await this.users.displayNames(sessions.flatMap((s) => [s.openedBy, s.closedBy]));
+    return sessions.map((s) => ({
+      ...s,
+      openedByName: s.openedBy ? (names.get(s.openedBy) ?? '') : '',
+      closedByName: s.closedBy ? (names.get(s.closedBy) ?? '') : '',
+    }));
   }
 
   async detail(tenantId: string, id: string) {
@@ -133,7 +159,16 @@ export class CashService implements OnModuleInit {
       this.summary(tenantId, id),
       this.movements.find({ tenantId, sessionId: id }).sort({ occurredAt: 1 }).lean(),
     ]);
-    return { session, summary, movements };
+    const names = await this.users.displayNames(movements.map((m) => m.createdBy));
+    const [named] = await this.withSessionNames([session]);
+    return {
+      session: named,
+      summary,
+      movements: movements.map((m) => ({
+        ...m,
+        createdByName: m.createdBy ? (names.get(m.createdBy) ?? '') : '',
+      })),
+    };
   }
 
   // Calcula el corte con ventas completadas y movimientos de efectivo

@@ -27,6 +27,12 @@ export class TerminalsController {
     return this.terminals.findAll(tenantId);
   }
 
+  // Sin permiso propio: quien consulta ventas, caja o inventario necesita los nombres
+  @Get('options')
+  options(@TenantId() tenantId: string) {
+    return this.terminals.options(tenantId);
+  }
+
   @Patch(':id')
   @RequirePermissions('terminals.manage')
   update(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdateTerminalDto) {

@@ -45,5 +45,6 @@ export class CloseSessionDto {
 export class ListSessionsQuery {
   @IsOptional() @IsString() terminalId?: string;
   @IsOptional() @IsIn(['open', 'closed']) status?: 'open' | 'closed';
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(200) limit?: number;
 }

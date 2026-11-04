@@ -13,8 +13,7 @@ import { SyncService } from '../sync/sync.service.js';
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { StockService } from '../stock/stock.service.js';
-import { SuperAdminsService } from '../super-admins/super-admins.service.js';
-import { User, UserDocument } from '../users/schemas/user.schema.js';
+import { UsersService } from '../users/users.service.js';
 
 function assertPriceNotBelowCost(price: number, cost: number) {
   if (cost > 0 && price < cost) throw new BadRequestException('price cannot be below cost');
@@ -36,8 +35,7 @@ export class ProductsService implements OnModuleInit {
     private readonly sync: SyncService,
     private readonly stock: StockService,
     @InjectConnection() private readonly connection: mongoose.Connection,
-    @InjectModel(User.name) private readonly users: Model<UserDocument>,
-    private readonly superAdmins: SuperAdminsService,
+    private readonly users: UsersService,
   ) {}
 
   onModuleInit() {
@@ -91,13 +89,7 @@ export class ProductsService implements OnModuleInit {
       .limit(200)
       .lean();
 
-    const ids = [...new Set(rows.map((row) => row.changedBy).filter((id): id is string => !!id))];
-    const users = await this.users.find({ _id: { $in: ids } }).select('fullName').lean();
-    const names = new Map<string, string>(users.map((user) => [user._id, user.fullName]));
-    for (const id of ids.filter((id) => !names.has(id))) {
-      const admin = await this.superAdmins.findActiveById(id);
-      if (admin) names.set(id, admin.fullName);
-    }
+    const names = await this.users.displayNames(rows.map((row) => row.changedBy));
     return rows.map((row) => ({
       ...row,
       changedByName: row.changedBy ? (names.get(row.changedBy) ?? null) : null,

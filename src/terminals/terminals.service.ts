@@ -37,6 +37,16 @@ export class TerminalsService {
     return rows.map((r) => this.strip(r));
   }
 
+  // Lo mínimo para filtrar y mostrar nombres. Incluye las eliminadas: sus ventas siguen existiendo.
+  async options(tenantId: string) {
+    const rows = await this.model
+      .find({ tenantId })
+      .select('name active deletedAt')
+      .sort({ name: 1 })
+      .lean();
+    return rows.map((t) => ({ _id: t._id, name: t.name, deleted: !!t.deletedAt }));
+  }
+
   async update(tenantId: string, id: string, dto: UpdateTerminalDto) {
     const t = await this.model
       .findOneAndUpdate({ _id: id, tenantId, deletedAt: null }, dto, { new: true })

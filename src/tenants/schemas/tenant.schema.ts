@@ -27,6 +27,15 @@ export class Tenant {
   @Prop({ type: String, default: null })
   logo: string | null;
 
+  // Ajustes que usan las terminales. Lo que falta aquí, cada terminal lo toma de sus valores iniciales.
+  @Prop({ type: Object, default: {} })
+  settings: {
+    ticketFooter?: string;
+    defaultTaxRate?: number;
+    printTicket?: 'ask' | 'always' | 'never';
+    paperWidth?: 58 | 80;
+  };
+
   @Prop({ type: Date, default: null })
   deletedAt: Date | null;
 

@@ -13,6 +13,7 @@ import { UsersService } from '../users/users.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { CreateTenantWithOwnerDto } from './dto/create-tenant-with-owner.dto.js';
 import { SuperAdminsService } from '../super-admins/super-admins.service.js';
+import { AuditService } from '../audit/audit.service.js';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly roles: RolesService,
     private readonly tenants: TenantsService,
     private readonly jwt: JwtService,
+    private readonly audit: AuditService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -34,6 +36,7 @@ export class AuthService {
       const ok = await argon2
         .verify(sa.passwordHash, dto.password)
         .catch(() => false);
+      await this.auditLogin(ok, null, sa._id, sa.fullName, true);
       if (!ok) throw new UnauthorizedException('Invalid credentials');
       const accessToken = await this.jwt.signAsync({
         sub: sa._id,
@@ -56,19 +59,46 @@ export class AuthService {
     const ok = await argon2
       .verify(user?.passwordHash ?? (await this.dummyHash), dto.password)
       .catch(() => false);
-    if (!user || !ok) throw new UnauthorizedException('Invalid credentials');
+    if (!user || !ok) {
+      if (user) await this.auditLogin(false, user.tenantId, user._id, user.fullName, false);
+      throw new UnauthorizedException('Invalid credentials');
+    }
     if (!(await this.tenants.isActive(user.tenantId))) {
+      await this.auditLogin(false, user.tenantId, user._id, user.fullName, false);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const role = await this.roles.findOneOrNull(user.tenantId, user.roleId);
     if (!role?.permissions.includes('admin.access')) {
+      await this.auditLogin(false, user.tenantId, user._id, user.fullName, false);
       throw new ForbiddenException('This user cannot access the admin');
     }
+    await this.auditLogin(true, user.tenantId, user._id, user.fullName, false);
     return this.issue(user._id, user.tenantId, user.fullName, role.permissions);
   }
 
   // Crea tenant + roles base + primer owner
+  // Un correo inexistente no se registra: no hay a quién atribuirlo y solo llenaría la bitácora
+  private auditLogin(
+    ok: boolean,
+    tenantId: string | null,
+    actorId: string,
+    actorName: string,
+    actorIsSuperAdmin: boolean,
+  ) {
+    return this.audit.record({
+      tenantId,
+      source: 'admin',
+      actorId,
+      actorName,
+      actorIsSuperAdmin,
+      action: ok ? 'auth.login' : 'auth.login_failed',
+      entity: 'auth',
+      entityId: actorId,
+      entityName: actorName,
+    });
+  }
+
   // Solo el super admin da de alta negocios. Crea el negocio, sus roles base y su propietario.
   async createTenant({ owner, ...fields }: CreateTenantWithOwnerDto) {
     if (

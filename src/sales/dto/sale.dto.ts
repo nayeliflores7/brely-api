@@ -85,6 +85,7 @@ export class CancelSaleDto {
 }
 
 export class ListSalesQuery {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) folio?: number;
   @IsOptional() @IsISO8601() from?: string;
   @IsOptional() @IsISO8601() to?: string;
   @IsOptional() @IsString() terminalId?: string;

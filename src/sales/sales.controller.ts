@@ -4,20 +4,31 @@ import { CancelSaleDto, CreateSaleDto, ListSalesQuery } from './dto/sale.dto.js'
 import { CurrentUser, RequirePermissions, TenantId } from '../common/decorators.js';
 import type { AuthUser } from '../common/auth.types.js';
 
+// Igual que en el POS: la utilidad de una venta solo es para quien tiene costs.view
+function forViewer<T extends { items: { unitCost: number }[] }>(sale: T, user: AuthUser): T {
+  if (user.isSuperAdmin || user.permissions.includes('costs.view')) return sale;
+  return { ...sale, items: sale.items.map((item) => ({ ...item, unitCost: 0 })) };
+}
+
 @Controller('sales')
 export class SalesController {
   constructor(private readonly sales: SalesService) {}
 
   @Get()
   @RequirePermissions('sales.view')
-  list(@TenantId() tenantId: string, @Query() q: ListSalesQuery) {
-    return this.sales.list(tenantId, q);
+  async list(
+    @TenantId() tenantId: string,
+    @CurrentUser() u: AuthUser,
+    @Query() q: ListSalesQuery,
+  ) {
+    const result = await this.sales.list(tenantId, q);
+    return { ...result, items: result.items.map((sale) => forViewer(sale, u)) };
   }
 
   @Get(':id')
   @RequirePermissions('sales.view')
-  findOne(@TenantId() tenantId: string, @Param('id') id: string) {
-    return this.sales.findOne(tenantId, id);
+  async findOne(@TenantId() tenantId: string, @CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return forViewer(await this.sales.findOne(tenantId, id), u);
   }
 
   @Post()

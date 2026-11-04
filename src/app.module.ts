@@ -15,6 +15,9 @@ import { CategoriesModule } from './categories/categories.module.js';
 import { ProductsModule } from './products/products.module.js';
 import { UnitsModule } from './units/units.module.js';
 import { SeedModule } from './seed/seed.module.js';
+import { PromotionsModule } from './promotions/promotions.module.js';
+import { AuditModule } from './audit/audit.module.js';
+import { AuditSyncModule } from './audit/audit-sync.module.js';
 
 @Module({
   imports: [
@@ -37,6 +40,9 @@ import { SeedModule } from './seed/seed.module.js';
     CategoriesModule,
     ProductsModule,
     SeedModule,
+    PromotionsModule,
+    AuditModule,
+    AuditSyncModule,
   ],
 })
 export class AppModule {}

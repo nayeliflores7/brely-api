@@ -1,3 +1,4 @@
+import { UsersModule } from '../users/users.module.js';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Sale, SaleSchema } from './schemas/sale.schema.js';
@@ -15,6 +16,7 @@ import { SyncModule } from '../sync/sync.module.js';
 
 @Module({
   imports: [
+    UsersModule,
     MongooseModule.forFeature([
       { name: Sale.name, schema: SaleSchema },
       { name: Product.name, schema: ProductSchema },

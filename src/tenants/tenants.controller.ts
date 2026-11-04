@@ -27,6 +27,12 @@ export class TenantsController {
     return this.tenants.findOne(tenantId);
   }
 
+  @Get('me/defaults')
+  @RequirePermissions()
+  defaults(@TenantId() tenantId: string) {
+    return this.tenants.defaults(tenantId);
+  }
+
   @Patch('me')
   updateMe(@TenantId() tenantId: string, @Body() dto: UpdateTenantDto) {
     return this.tenants.update(tenantId, dto);

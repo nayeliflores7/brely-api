@@ -44,6 +44,7 @@ export class SyncService {
           phone: d.phone,
           address: d.address,
           logo: d.logo,
+          settings: d.settings ?? {},
           updatedAt: d.updatedAt,
           deletedAt: d.deletedAt,
         }),

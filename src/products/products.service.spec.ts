@@ -47,7 +47,6 @@ function setUp() {
     } as never,
     { transaction: (fn: (s: unknown) => unknown) => fn({}) } as never,
     {} as never,
-    {} as never,
   );
   return { service, calls };
 }
