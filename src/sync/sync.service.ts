@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
+import { barcodePrefixOf } from '../tenants/barcode-prefix.js';
 import { Tenant, TenantDocument } from '../tenants/schemas/tenant.schema.js';
 import { Role, RoleDocument } from '../roles/schemas/role.schema.js';
 import { User, UserDocument } from '../users/schemas/user.schema.js';
@@ -44,7 +45,8 @@ export class SyncService {
           phone: d.phone,
           address: d.address,
           logo: d.logo,
-          settings: d.settings ?? {},
+          // Los negocios anteriores a esta opción no la tienen guardada: reciben la de su nombre
+          settings: { ...(d.settings ?? {}), barcodePrefix: barcodePrefixOf(d) },
           updatedAt: d.updatedAt,
           deletedAt: d.deletedAt,
         }),

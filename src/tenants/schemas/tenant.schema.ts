@@ -34,6 +34,7 @@ export class Tenant {
     defaultTaxRate?: number;
     printTicket?: 'ask' | 'always' | 'never';
     paperWidth?: 58 | 80;
+    barcodePrefix?: string;
   };
 
   @Prop({ type: Date, default: null })

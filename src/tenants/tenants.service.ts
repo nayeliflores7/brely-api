@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateTenantDto } from './dto/create-tenant.dto.js';
+import { barcodePrefixOf, prefixFromName } from './barcode-prefix.js';
 import { DEFAULT_TENANT_SETTINGS } from './dto/tenant-settings.dto.js';
 import { UpdateTenantDto } from './dto/update-tenant.dto.js';
 import { Tenant, TenantDocument } from './schemas/tenant.schema.js';
@@ -12,8 +13,9 @@ export class TenantsService {
     @InjectModel(Tenant.name) private readonly model: Model<TenantDocument>,
   ) {}
 
+  // Nace con su prefijo de códigos: las 3 primeras letras del nombre, salvo que se indique otro
   create(dto: CreateTenantDto) {
-    return this.model.create(dto);
+    return this.model.create({ ...dto, settings: { barcodePrefix: prefixFromName(dto.name), ...dto.settings } });
   }
 
   findAll() {
@@ -32,7 +34,10 @@ export class TenantsService {
   // Lo que cualquiera del panel necesita al capturar, sin los datos del negocio
   async defaults(id: string) {
     const tenant = await this.findOne(id);
-    return { defaultTaxRate: tenant.settings?.defaultTaxRate ?? DEFAULT_TENANT_SETTINGS.defaultTaxRate };
+    return {
+      defaultTaxRate: tenant.settings?.defaultTaxRate ?? DEFAULT_TENANT_SETTINGS.defaultTaxRate,
+      barcodePrefix: barcodePrefixOf(tenant),
+    };
   }
 
   async isActive(id: string) {

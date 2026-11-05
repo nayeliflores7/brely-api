@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export const DEFAULT_TENANT_SETTINGS = {
   ticketFooter: 'GRACIAS POR SU COMPRA',
@@ -20,4 +20,8 @@ export class TenantSettingsDto {
 
   @IsOptional() @IsIn([58, 80])
   paperWidth?: 58 | 80;
+
+  // Inicio de los códigos que genera el sistema: VEN-7K3M9Q2X
+  @IsOptional() @Matches(/^[A-Z0-9]{1,6}$/)
+  barcodePrefix?: string;
 }
