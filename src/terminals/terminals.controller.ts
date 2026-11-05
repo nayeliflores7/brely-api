@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import { assertPosVersion, POS_VERSION_HEADER } from '../common/pos-version.js';
 import { TerminalsService, type TerminalWithCode } from './terminals.service.js';
 import { ActivateDto, CreateTerminalDto, UpdateTerminalDto } from './dto/terminal.dto.js';
 import { Public, RequirePermissions, TenantId } from '../common/decorators.js';
@@ -11,8 +12,9 @@ export class TerminalsController {
   @Public()
   @Post('activate')
   @HttpCode(200)
-  activate(@Body() dto: ActivateDto) {
-    return this.terminals.activate(dto);
+  activate(@Body() dto: ActivateDto, @Headers(POS_VERSION_HEADER) version?: string) {
+    assertPosVersion(version);
+    return this.terminals.activate(dto, version ?? null);
   }
 
   @Post()

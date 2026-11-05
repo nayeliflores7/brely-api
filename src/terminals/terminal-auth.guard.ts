@@ -1,3 +1,4 @@
+import { assertPosVersion, POS_VERSION_HEADER } from '../common/pos-version.js';
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TerminalsService } from './terminals.service.js';
@@ -14,6 +15,9 @@ export class TerminalAuthGuard implements CanActivate {
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest();
+    // Antes que nada: un POS demasiado viejo no debe escribir datos que la API ya no entiende
+    const version = req.headers[POS_VERSION_HEADER] as string | undefined;
+    assertPosVersion(version);
     const [type, token] = (req.headers.authorization ?? '').split(' ');
     if (type !== 'Bearer' || !token) throw new UnauthorizedException();
 
@@ -37,6 +41,7 @@ export class TerminalAuthGuard implements CanActivate {
     const terminal: TerminalContext = { id: t._id, tenantId: t.tenantId };
     req.terminal = terminal;
     this.terminals.touch(t);
+    if (version && version !== t.appVersion) this.terminals.recordVersion(t._id, version);
     return true;
   }
 }

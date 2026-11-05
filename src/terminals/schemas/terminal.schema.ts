@@ -45,6 +45,10 @@ export class Terminal {
   @Prop({ default: '' })
   deviceInfo: string;
 
+  // La versión del POS instalado, la que mandó en su última llamada
+  @Prop({ type: String, default: null })
+  appVersion: string | null;
+
   // Subirlo invalida el token anterior (reinstalación, robo del equipo)
   @Prop({ default: 0 })
   tokenVersion: number;

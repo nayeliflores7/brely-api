@@ -121,7 +121,7 @@ export class TerminalsService {
   }
 
   // Público: lo llama el POS. La actualización atómica evita canjear el mismo código dos veces
-  async activate(dto: ActivateDto) {
+  async activate(dto: ActivateDto, appVersion: string | null = null) {
     const now = new Date();
     const t = await this.model
       .findOneAndUpdate(
@@ -134,7 +134,7 @@ export class TerminalsService {
           deletedAt: null,
         },
         {
-          $set: { activatedAt: now, lastSeenAt: now, deviceInfo: dto.deviceInfo ?? '' },
+          $set: { activatedAt: now, lastSeenAt: now, deviceInfo: dto.deviceInfo ?? '', appVersion: appVersion?.slice(0, 32) ?? null },
           $unset: { activationCodeHash: 1, activationExpiresAt: 1 },
         },
         { new: true },
@@ -171,6 +171,12 @@ export class TerminalsService {
     if (t.lastSeenAt && Date.now() - +t.lastSeenAt < 60_000) return;
     this.model
       .updateOne({ _id: t._id }, { $set: { lastSeenAt: new Date() } }, { timestamps: false })
+      .catch(() => undefined);
+  }
+
+  recordVersion(id: string, version: string) {
+    this.model
+      .updateOne({ _id: id }, { $set: { appVersion: version.slice(0, 32) } }, { timestamps: false })
       .catch(() => undefined);
   }
 
