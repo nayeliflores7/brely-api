@@ -1,3 +1,4 @@
+import { VersionController } from './common/version.controller.js';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -46,5 +47,6 @@ import { AuditSyncModule } from './audit/audit-sync.module.js';
     AuditModule,
     AuditSyncModule,
   ],
+  controllers: [VersionController],
 })
 export class AppModule {}
