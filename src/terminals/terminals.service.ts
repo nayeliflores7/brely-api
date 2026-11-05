@@ -149,6 +149,19 @@ export class TerminalsService {
     return { token, terminalId: t._id, terminalName: t.name, tenantId: t.tenantId };
   }
 
+  // La pide el propio equipo al desvincularse: queda sin activar y su token deja de servir.
+  // Sin código: para volver a usarla se genera uno en el panel.
+  async unlinkSelf(id: string) {
+    await this.model.updateOne(
+      { _id: id, deletedAt: null },
+      {
+        $set: { activatedAt: null, deviceInfo: '' },
+        $unset: { activationCodeHash: 1, activationExpiresAt: 1 },
+        $inc: { tokenVersion: 1 },
+      },
+    );
+  }
+
   // ── Usados por TerminalAuthGuard ──
   findForAuth(id: string) {
     return this.model.findOne({ _id: id, deletedAt: null }).lean();

@@ -24,6 +24,7 @@ export const PERMISSION_CATALOG = [
   { key: 'inventory.view', scope: 'pos', name: 'Ver inventario', description: 'Consultar existencias y movimientos' },
   { key: 'catalogs.manage', scope: 'pos', name: 'Administrar catálogos', description: 'Editar categorías y unidades' },
   { key: 'promotions.manage', scope: 'pos', name: 'Administrar promociones', description: 'Crear y editar promociones' },
+  { key: 'terminal.unlink', scope: 'pos', name: 'Desvincular la terminal', description: 'Borrar los datos del equipo para activarlo con otro código' },
 ] as const;
 
 export type Permission = (typeof PERMISSION_CATALOG)[number]['key'];
@@ -36,6 +37,7 @@ const NOT_FOR_MANAGERS: readonly Permission[] = [
   'roles.manage',
   'settings.manage',
   'terminals.manage',
+  'terminal.unlink', // borra el equipo: solo el propietario, salvo que lo active en Roles
 ];
 
 export const OWNER_ROLE_NAME = 'Propietario';

@@ -9,6 +9,7 @@ import { PermissionEntity, PermissionSchema } from '../permissions/schemas/permi
 import { AuthModule } from '../auth/auth.module.js';
 import { TerminalsModule } from '../terminals/terminals.module.js';
 import { TenantsModule } from '../tenants/tenants.module.js';
+import { AuditModule } from '../audit/audit.module.js';
 import { SyncOp, SyncOpSchema } from './schemas/sync-op.schema.js';
 
 @Module({
@@ -24,6 +25,7 @@ import { SyncOp, SyncOpSchema } from './schemas/sync-op.schema.js';
     AuthModule,
     TerminalsModule,
     TenantsModule,
+    AuditModule,
   ],
   controllers: [SyncController],
   providers: [SyncService],
