@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { RejectedOpError } from '../sync/sync.types.js';
 import { PromotionPushHandler } from './promotion-push.handler.js';
-import { normalizePromotion } from './promotions.service.js';
+import { exceedsPrice, normalizePromotion } from './promotions.service.js';
 
 const base = { name: ' 3X2 ', type: 'buy_x_pay_y' as const, productId: 'p', buyQty: 3, payQty: 2 };
 
@@ -38,6 +38,22 @@ describe('normalizePromotion', () => {
   it('los 7 días equivalen a sin límite, y ordena los demás', () => {
     expect(normalizePromotion({ ...base, weekdays: [0, 1, 2, 3, 4, 5, 6] }).weekdays).toBeNull();
     expect(normalizePromotion({ ...base, weekdays: [5, 1, 1] }).weekdays).toEqual([1, 5]);
+  });
+});
+
+describe('exceedsPrice', () => {
+  const rule = (values: object) => ({ amount: null, bundleQty: null, bundlePrice: null, ...values });
+
+  it.each([
+    ['descuento mayor al precio', { amount: 8 }, 5, true],
+    ['descuento igual al precio', { amount: 5 }, 5, false],
+    ['descuento menor al precio', { amount: 2 }, 5, false],
+    ['paquete más caro que sus piezas', { bundleQty: 3, bundlePrice: 40 }, 10, true],
+    ['paquete igual a sus piezas', { bundleQty: 3, bundlePrice: 30 }, 10, true],
+    ['paquete más barato que sus piezas', { bundleQty: 3, bundlePrice: 25 }, 10, false],
+    ['porcentaje o 3x2: no dependen del precio', {}, 1, false],
+  ])('%s', (_, values, price, expected) => {
+    expect(exceedsPrice(rule(values), price)).toBe(expected);
   });
 });
 

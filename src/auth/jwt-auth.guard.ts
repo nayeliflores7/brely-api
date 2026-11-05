@@ -14,6 +14,11 @@ import { RolesService } from '../roles/roles.service.js';
 import { TenantsService } from '../tenants/tenants.service.js';
 import { SuperAdminsService } from '../super-admins/super-admins.service.js';
 
+/** Se compara en segundos, como iat: entrar en cuanto se restablece no debe contar como anterior. */
+export function sessionRevoked(issuedAt: number | undefined, validFrom: Date | null | undefined): boolean {
+  return !!validFrom && (issuedAt ?? 0) < Math.floor(validFrom.getTime() / 1000);
+}
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
@@ -40,6 +45,7 @@ export class JwtAuthGuard implements CanActivate {
       sub: string;
       tenantId?: string;
       scope?: 'platform' | 'terminal';
+      iat?: number;
     };
 
     try {
@@ -53,7 +59,7 @@ export class JwtAuthGuard implements CanActivate {
     // ── Super admin ──
     if (payload.scope === 'platform') {
       const admin = await this.superAdmins.findActiveById(payload.sub);
-      if (!admin) throw new UnauthorizedException();
+      if (!admin || sessionRevoked(payload.iat, admin.sessionsValidFrom)) throw new UnauthorizedException();
 
       let tenantId: string | null = null;
       const header = req.headers['x-tenant-id'];
@@ -78,7 +84,7 @@ export class JwtAuthGuard implements CanActivate {
 
     // ── Usuario de tenant ──
     const user = await this.users.findActiveById(payload.sub);
-    if (!user || user.tenantId !== payload.tenantId)
+    if (!user || user.tenantId !== payload.tenantId || sessionRevoked(payload.iat, user.sessionsValidFrom))
       throw new UnauthorizedException();
     if (!(await this.tenants.isActive(user.tenantId)))
       throw new UnauthorizedException();

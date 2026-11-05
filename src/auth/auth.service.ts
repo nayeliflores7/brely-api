@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -10,6 +11,8 @@ import * as argon2 from 'argon2';
 import { RolesService } from '../roles/roles.service.js';
 import { TenantsService } from '../tenants/tenants.service.js';
 import { UsersService } from '../users/users.service.js';
+import type { AuthUser } from '../common/auth.types.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { CreateTenantWithOwnerDto } from './dto/create-tenant-with-owner.dto.js';
 import { SuperAdminsService } from '../super-admins/super-admins.service.js';
@@ -78,6 +81,20 @@ export class AuthService {
   }
 
   // Crea tenant + roles base + primer owner
+  // 400 y no 401 si la actual no coincide: un 401 cerraría la sesión en el panel
+  async changePassword(user: AuthUser, dto: ChangePasswordDto) {
+    const store = user.isSuperAdmin ? this.superAdmins : this.users;
+    const account = await store.findForPassword(user.id);
+    const ok = await argon2
+      .verify(account?.passwordHash ?? (await this.dummyHash), dto.currentPassword)
+      .catch(() => false);
+    if (!account || !ok) throw new BadRequestException('Current password is incorrect');
+    if (dto.newPassword === dto.currentPassword) {
+      throw new BadRequestException('The new password must be different');
+    }
+    await store.setPassword(user.id, await argon2.hash(dto.newPassword));
+  }
+
   // Un correo inexistente no se registra: no hay a quién atribuirlo y solo llenaría la bitácora
   private auditLogin(
     ok: boolean,

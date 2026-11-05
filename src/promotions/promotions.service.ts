@@ -65,6 +65,15 @@ export function normalizePromotion(input: Fields) {
   };
 }
 
+/** Un descuento por pieza no puede superar el precio, ni un paquete costar lo mismo o más que sus piezas. */
+export function exceedsPrice(
+  rule: { amount: number | null; bundleQty: number | null; bundlePrice: number | null },
+  price: number,
+): boolean {
+  if (rule.amount !== null && rule.amount > price) return true;
+  return rule.bundlePrice !== null && rule.bundlePrice >= (rule.bundleQty ?? 0) * price;
+}
+
 @Injectable()
 export class PromotionsService implements OnModuleInit {
   constructor(
@@ -119,6 +128,7 @@ export class PromotionsService implements OnModuleInit {
   async create(tenantId: string, dto: CreatePromotionDto, opts: { id?: string; session?: ClientSession } = {}) {
     const fields = normalizePromotion(dto);
     await this.assertTarget(tenantId, fields, opts.session);
+    await this.assertFitsPrice(tenantId, fields, opts.session);
     const [doc] = await this.model.create(
       [{ ...fields, tenantId, ...(opts.id ? { _id: opts.id } : {}) }],
       { session: opts.session },
@@ -146,10 +156,14 @@ export class PromotionsService implements OnModuleInit {
       weekdays: dto.weekdays !== undefined ? dto.weekdays : current.weekdays,
       active: dto.active ?? current.active,
     });
-    // Solo si cambió: pausar una promoción no debe fallar porque ya borraron su producto
-    if (fields.productId !== current.productId || fields.categoryId !== current.categoryId) {
-      await this.assertTarget(tenantId, fields, session);
-    }
+    // Solo si cambió: pausar una promoción no debe fallar porque ya borraron su producto o bajó su precio
+    const targetChanged = fields.productId !== current.productId || fields.categoryId !== current.categoryId;
+    if (targetChanged) await this.assertTarget(tenantId, fields, session);
+    const ruleChanged =
+      fields.amount !== current.amount ||
+      fields.bundleQty !== current.bundleQty ||
+      fields.bundlePrice !== current.bundlePrice;
+    if (targetChanged || ruleChanged) await this.assertFitsPrice(tenantId, fields, session);
     return this.model.findOneAndUpdate({ _id: id, tenantId, deletedAt: null }, fields, { new: true, session }).lean();
   }
 
@@ -165,6 +179,25 @@ export class PromotionsService implements OnModuleInit {
   // Para el push del POS: incluye borradas y de otros tenants
   findAnyById(id: string, session?: ClientSession) {
     return this.model.findById(id).session(session ?? null).lean();
+  }
+
+  // En una categoría se revisan todos sus productos activos
+  private async assertFitsPrice(
+    tenantId: string,
+    fields: ReturnType<typeof normalizePromotion>,
+    session?: ClientSession,
+  ) {
+    if (fields.amount === null && fields.bundlePrice === null) return;
+    const filter = fields.productId
+      ? { _id: fields.productId }
+      : { categoryId: fields.categoryId, active: true };
+    const products = await this.products
+      .find({ ...filter, tenantId, deletedAt: null })
+      .select('name price')
+      .session(session ?? null)
+      .lean();
+    const product = products.find((p) => exceedsPrice(fields, p.price));
+    if (product) throw new BadRequestException(`Promotion exceeds the price of ${product.name}`);
   }
 
   private async assertTarget(

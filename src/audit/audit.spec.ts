@@ -16,6 +16,7 @@ describe('describeRoute', () => {
     ['POST', '/api/v1/tenants/:id/restore', 'tenants', 'tenants.restore'],
     ['PATCH', '/api/v1/tenants/me', 'tenants', 'tenants.me.update'],
     ['PATCH', '/api/v1/units/:code', 'units', 'units.update'],
+    ['POST', '/api/v1/auth/change-password', 'auth', 'auth.change-password.create'],
   ])('%s %s', (method, path, entity, action) => {
     expect(describeRoute(method, path)).toEqual({ entity, action });
   });
@@ -30,6 +31,8 @@ describe('sanitize', () => {
       logo: 'data:image',
       owner: { email: 'a@b.com', password: 'y', pinHash: 'z' },
       list: [{ accessToken: 't', name: 'n' }],
+      currentPassword: 'a',
+      newPassword: 'b',
     });
 
     expect(clean).toEqual({
@@ -38,6 +41,8 @@ describe('sanitize', () => {
       pin: '[oculto]',
       owner: { email: 'a@b.com', password: '[oculto]', pinHash: '[oculto]' },
       list: [{ accessToken: '[oculto]', name: 'n' }],
+      currentPassword: '[oculto]',
+      newPassword: '[oculto]',
     });
   });
 
@@ -191,6 +196,18 @@ describe('AuditPushHandler', () => {
     );
 
     expect(saved[0]).toMatchObject({ actorId: 'u', actorName: 'Ana', entity: 'auth', entityName: 'Ana' });
+  });
+
+  it('un código no encontrado se puede ver y buscar en la bitácora', async () => {
+    const { handler, saved } = setUp();
+
+    await handler.handle(
+      ctx as never,
+      push({ ...base, action: 'sale.unknown_barcode', entityId: null, userId: 'u', detail: '{"code":"750123"}' }),
+      {} as never,
+    );
+
+    expect(saved[0]).toMatchObject({ entity: 'sales', entityId: null, entityName: '750123', detail: { code: '750123' } });
   });
 
   it('rechaza cualquier acción que no sea crear', async () => {

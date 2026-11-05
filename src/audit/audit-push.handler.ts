@@ -45,12 +45,13 @@ export class AuditPushHandler implements PushHandler, OnModuleInit {
     const actorId = dto.userId ?? (dto.entity === 'user' ? (dto.entityId ?? null) : null);
     const names = await this.users.displayNames([actorId]);
     const actorName = actorId ? (names.get(actorId) ?? '') : '';
+    const detail = parseDetail(dto.detail);
     const entityName =
       entity === 'auth'
         ? actorName
         : dto.entityId
           ? await this.audit.lookupName(entity, dto.entityId)
-          : '';
+          : String((detail as { code?: unknown } | null)?.code ?? ''); // sin registro: un código no encontrado
     await this.audit.recordInSession(
       {
         id: dto.id,
@@ -63,7 +64,7 @@ export class AuditPushHandler implements PushHandler, OnModuleInit {
         entity,
         entityId: dto.entityId ?? null,
         entityName,
-        detail: parseDetail(dto.detail),
+        detail,
         occurredAt: new Date(dto.createdAt),
       },
       session,

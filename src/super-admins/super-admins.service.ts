@@ -31,6 +31,10 @@ export class SuperAdminsService implements OnApplicationBootstrap {
     this.logger.log(`Super admin created: ${email}`);
   }
 
+  async resetPassword(id: string, passwordHash: string) {
+    await this.model.updateOne({ _id: id, active: true }, { passwordHash, sessionsValidFrom: new Date() });
+  }
+
   findByEmailForLogin(email: string) {
     return this.model
       .findOne({ email: email.toLowerCase(), active: true })
@@ -38,8 +42,16 @@ export class SuperAdminsService implements OnApplicationBootstrap {
       .lean();
   }
 
+  findForPassword(id: string) {
+    return this.model.findOne({ _id: id, active: true }).select('+passwordHash').lean();
+  }
+
+  async setPassword(id: string, passwordHash: string) {
+    await this.model.updateOne({ _id: id, active: true }, { passwordHash });
+  }
+
   findActiveById(id: string) {
-    return this.model.findOne({ _id: id, active: true }).lean();
+    return this.model.findOne({ _id: id, active: true }).select('+sessionsValidFrom').lean();
   }
 
   async emailExists(email: string) {

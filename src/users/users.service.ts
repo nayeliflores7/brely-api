@@ -160,6 +160,18 @@ export class UsersService {
   }
 
   // Lo usará Auth: devuelve el usuario con el hash de contraseña
+  findForPassword(id: string) {
+    return this.model.findOne({ _id: id, deletedAt: null, active: true }).select('+passwordHash').lean();
+  }
+
+  async setPassword(id: string, passwordHash: string) {
+    await this.model.updateOne({ _id: id, deletedAt: null }, { passwordHash });
+  }
+
+  async resetPassword(id: string, passwordHash: string) {
+    await this.model.updateOne({ _id: id, deletedAt: null, active: true }, { passwordHash, sessionsValidFrom: new Date() });
+  }
+
   findByEmailForLogin(email: string) {
     return this.model
       .findOne({ email: email.toLowerCase(), deletedAt: null, active: true })
@@ -185,7 +197,7 @@ export class UsersService {
   findActiveById(id: string) {
     return this.model
       .findOne({ _id: id, active: true, deletedAt: null })
-      .lean();
+      .select('+sessionsValidFrom').lean();
   }
 
   async emailExists(email: string) {

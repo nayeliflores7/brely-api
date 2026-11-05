@@ -21,6 +21,10 @@ export class SuperAdmin {
   @Prop({ default: true })
   active: boolean;
 
+  // Las sesiones emitidas antes de esto ya no valen: se fija al restablecer la contraseña
+  @Prop({ type: Date, default: null, select: false })
+  sessionsValidFrom: Date | null;
+
   createdAt: Date;
   updatedAt: Date;
 }

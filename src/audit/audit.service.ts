@@ -5,7 +5,8 @@ import mongoose, { Model } from 'mongoose';
 import { ListAuditQuery, ListPlatformAuditQuery } from './dto/audit.dto.js';
 import { AuditLog, AuditLogDocument } from './schemas/audit-log.schema.js';
 
-const SECRET_KEYS = /^(password|passwordHash|pin|pinHash|pinSalt|token|accessToken|activationCode|activationCodeHash|secret)$/i;
+// Cualquier campo con "password", no solo el exacto: currentPassword, newPassword...
+const SECRET_KEYS = /password|^(pin|pinHash|pinSalt|token|accessToken|activationCode|activationCodeHash|secret)$/i;
 const OMITTED_KEYS = /^(logo)$/i;
 const MAX_DETAIL_LENGTH = 20_000;
 
