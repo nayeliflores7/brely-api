@@ -85,6 +85,41 @@ export class TerminalsService {
     if (!t) throw new NotFoundException(`Terminal ${id} not found`);
   }
 
+  async findDeleted(tenantId: string) {
+    const rows = await this.model
+      .find({ tenantId, deletedAt: { $ne: null } })
+      .sort({ deletedAt: -1 })
+      .limit(100)
+      .lean();
+    return rows.map((r) => this.strip(r));
+  }
+
+  // Conserva el id: sus ventas y folios vuelven a ser de esta terminal, y el POS puede reactivarse
+  // sin perder lo que tenga sin enviar. Siempre con código nuevo: pudo eliminarse por un equipo
+  // robado, y restaurarla no debe devolverle el acceso a ese equipo.
+  async restore(tenantId: string, id: string): Promise<TerminalWithCode> {
+    const c = this.issueCode();
+    const t = await this.model
+      .findOneAndUpdate(
+        { _id: id, tenantId, deletedAt: { $ne: null } },
+        {
+          $set: {
+            deletedAt: null,
+            active: true,
+            activatedAt: null,
+            deviceInfo: '',
+            activationCodeHash: c.hash,
+            activationExpiresAt: c.expiresAt,
+          },
+          $inc: { tokenVersion: 1 },
+        },
+        { new: true },
+      )
+      .lean();
+    if (!t) throw new NotFoundException(`Terminal ${id} not found`);
+    return { ...this.strip(t), activationCode: c.display, activationExpiresAt: c.expiresAt };
+  }
+
   // Público: lo llama el POS. La actualización atómica evita canjear el mismo código dos veces
   async activate(dto: ActivateDto) {
     const now = new Date();

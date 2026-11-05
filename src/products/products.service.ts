@@ -13,10 +13,14 @@ import { SyncService } from '../sync/sync.service.js';
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { StockService } from '../stock/stock.service.js';
+import { netOfPrice } from '../common/money.js';
+
+const DEFAULT_TAX_RATE = 0.16; // el del esquema del producto
 import { UsersService } from '../users/users.service.js';
 
-function assertPriceNotBelowCost(price: number, cost: number) {
-  if (cost > 0 && price < cost) throw new BadRequestException('price cannot be below cost');
+// El precio incluye IVA y el costo es lo que se pagó: lo que queda para cubrirlo es el subtotal
+function assertPriceNotBelowCost(price: number, cost: number, taxRate: number) {
+  if (cost > 0 && netOfPrice(price, taxRate) < cost) throw new BadRequestException('price cannot be below cost');
 }
 
 export interface WriteOpts {
@@ -123,7 +127,7 @@ export class ProductsService implements OnModuleInit {
 
   async create(tenantId: string, dto: CreateProductDto, opts: WriteOpts = {}) {
     const { session } = opts;
-    assertPriceNotBelowCost(dto.price, dto.cost);
+    assertPriceNotBelowCost(dto.price, dto.cost, dto.taxRate ?? DEFAULT_TAX_RATE);
     await this.assertRefs(tenantId, dto, session);
     try {
       const [doc] = await this.model.create(
@@ -150,7 +154,7 @@ export class ProductsService implements OnModuleInit {
       .session(session ?? null)
       .lean();
     if (!current) throw new NotFoundException(`Product ${id} not found`);
-    assertPriceNotBelowCost(dto.price ?? current.price, dto.cost ?? current.cost);
+    assertPriceNotBelowCost(dto.price ?? current.price, dto.cost ?? current.cost, dto.taxRate ?? current.taxRate ?? DEFAULT_TAX_RATE);
     // Igual que en el POS: un producto conserva su unidad o categoría aunque ya esté inactiva;
     // solo se valida lo que cambia
     await this.assertRefs(

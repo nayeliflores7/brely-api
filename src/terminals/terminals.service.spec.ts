@@ -41,3 +41,42 @@ describe('TerminalsService.activate', () => {
     );
   });
 });
+
+describe('TerminalsService.restore', () => {
+  function restoreSetUp(found: Record<string, unknown> | null) {
+    const calls: { filter: Record<string, any>; update: Record<string, any> }[] = [];
+    const model = {
+      findOneAndUpdate: (filter: Record<string, any>, update: Record<string, any>) => {
+        calls.push({ filter, update });
+        return { lean: () => Promise.resolve(found) };
+      },
+    };
+    return { service: new TerminalsService(model as never, { signAsync: async () => 't' } as never), calls };
+  }
+
+  it('solo restaura una eliminada del mismo negocio', async () => {
+    const { service, calls } = restoreSetUp({ _id: 't1', name: 'Caja 1' });
+
+    await service.restore('x', 't1');
+
+    expect(calls[0].filter).toEqual({ _id: 't1', tenantId: 'x', deletedAt: { $ne: null } });
+  });
+
+  it('devuelve un código nuevo y obliga a activar de nuevo el equipo', async () => {
+    const { service, calls } = restoreSetUp({ _id: 't1', name: 'Caja 1', activationCodeHash: 'secreto' });
+
+    const result = await service.restore('x', 't1');
+
+    expect(result.activationCode).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    expect(result).not.toHaveProperty('activationCodeHash');
+    expect(calls[0].update.$set).toMatchObject({ deletedAt: null, active: true, activatedAt: null });
+    expect(calls[0].update.$inc).toEqual({ tokenVersion: 1 }); // el token del equipo anterior no revive
+    expect(calls[0].update.$set.activationCodeHash).toHaveLength(64);
+  });
+
+  it('una terminal que no está eliminada no se restaura', async () => {
+    const { service } = restoreSetUp(null);
+
+    await expect(service.restore('x', 't1')).rejects.toThrow('not found');
+  });
+});

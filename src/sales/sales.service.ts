@@ -19,7 +19,7 @@ import { SyncService } from '../sync/sync.service.js';
 import { notMine } from '../sync/echo-filter.js';
 import type { SyncContext } from '../sync/sync.types.js';
 import type { AuthUser } from '../common/auth.types.js';
-import { round2 } from '../common/money.js';
+import { priceLine, round2 } from '../common/money.js';
 
 @Injectable()
 export class SalesService implements OnModuleInit {
@@ -118,17 +118,18 @@ export class SalesService implements OnModuleInit {
       const found = await this.products.find({ _id: { $in: ids }, tenantId, deletedAt: null }).session(session).lean();
       const byId = new Map(found.map((p) => [p._id, p]));
 
-      // IVA por línea sobre el neto (importe - descuento); precios sin IVA
-      let subtotal = 0, tax = 0, discountTotal = 0;
+      // Los precios ya incluyen IVA: se calcula por línea y se desglosa del total
+      let subtotal = 0, tax = 0, total = 0, discountTotal = 0;
       const items = dto.items.map((i) => {
         const p = byId.get(i.productId);
         if (!p) throw new BadRequestException(`Product ${i.productId} not found`);
         const unitPrice = i.unitPrice ?? p.price;
         const discount = round2(i.discount ?? 0);
-        const net = round2(unitPrice * i.quantity - discount);
-        if (net < 0) throw new BadRequestException(`Discount exceeds the line amount for "${p.name}"`);
-        subtotal += net;
-        tax += round2(net * p.taxRate);
+        const line = priceLine(unitPrice, i.quantity, discount, p.taxRate);
+        if (line.total < 0) throw new BadRequestException(`Discount exceeds the line amount for "${p.name}"`);
+        subtotal += line.net;
+        tax += line.tax;
+        total += line.total;
         discountTotal += discount;
         return {
           productId: p._id, barcode: p.barcode, name: p.name, unit: p.unit, unitPrice,
@@ -138,7 +139,7 @@ export class SalesService implements OnModuleInit {
       });
       subtotal = round2(subtotal);
       tax = round2(tax);
-      const total = round2(subtotal + tax);
+      total = round2(total);
 
       const payments = this.normalizePayments(dto.payments, total);
       const received = round2(payments.reduce((a, p) => a + p.tendered, 0));

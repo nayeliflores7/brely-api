@@ -161,3 +161,45 @@ describe('buildReport', () => {
     expect(report.profitability.margin).toBe(0);
   });
 });
+
+describe('buildReport con IVA incluido en el precio', () => {
+  const line = (values = {}) => ({
+    productId: 'p1', name: 'LATA', unit: 'pza', unitPrice: 60, unitCost: 44, quantity: 3, discount: 0, taxRate: 0.16, promotionName: null, ...values,
+  });
+  const taxed = (items: ReturnType<typeof line>[], subtotal: number, tax: number, total: number, discount = 0): ReportSale => ({
+    terminalId: 't1', soldAt: new Date('2026-11-04T18:00:00Z'), status: 'completed', subtotal, tax, total, discount, items,
+    payments: [{ method: 'cash', amount: total }],
+  });
+  const report = (sales: ReportSale[]) =>
+    buildReport(sales, [], { timeZone: 'America/Mexico_City', includeCosts: true, from: new Date('2026-11-04T06:00:00Z'), to: new Date('2026-11-05T05:00:00Z'), terminalLabel: () => 'Caja' }) as any;
+
+  it('la utilidad resta el costo del subtotal, no del precio', () => {
+    const result = report([taxed([line()], 155.17, 24.83, 180)]);
+
+    expect(result.totals).toMatchObject({ subtotal: 155.17, tax: 24.83, total: 180 });
+    expect(result.profitability.profit).toBe(23.17);
+    expect(result.topProducts[0].amount).toBe(155.17);
+  });
+
+  it('una promoción cuenta lo que dejó de entrar sin IVA', () => {
+    const result = report([taxed([line({ discount: 60, promotionName: '3X2' })], 103.45, 16.55, 120, 60)]);
+
+    expect(result.promotions.discount).toBe(51.72);
+    expect(result.promotions.rows[0].discount).toBe(51.72);
+    expect(result.totals.gross).toBe(155.17);
+    expect(result.profitability.profitWithoutPromotions).toBe(23.17);
+  });
+
+  it('vender bajo costo se detecta contra el subtotal', () => {
+    const result = report([taxed([line({ unitPrice: 50, quantity: 1 })], 43.1, 6.9, 50)]);
+
+    expect(result.profitability.belowCostLoss).toBe(0.9);
+  });
+
+  it('exento: precio y subtotal son lo mismo', () => {
+    const result = report([taxed([line({ taxRate: 0, quantity: 2, discount: 10, promotionName: 'X' })], 110, 0, 110, 10)]);
+
+    expect(result.promotions.discount).toBe(10);
+    expect(result.profitability.profit).toBe(22);
+  });
+});

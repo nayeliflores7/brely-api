@@ -33,6 +33,19 @@ export class TerminalsController {
     return this.terminals.options(tenantId);
   }
 
+  @Get('deleted')
+  @RequirePermissions('terminals.manage')
+  findDeleted(@TenantId() tenantId: string) {
+    return this.terminals.findDeleted(tenantId);
+  }
+
+  @Post(':id/restore')
+  @HttpCode(200)
+  @RequirePermissions('terminals.manage')
+  restore(@TenantId() tenantId: string, @Param('id') id: string): Promise<TerminalWithCode> {
+    return this.terminals.restore(tenantId, id);
+  }
+
   @Patch(':id')
   @RequirePermissions('terminals.manage')
   update(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdateTerminalDto) {

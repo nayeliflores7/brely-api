@@ -69,6 +69,14 @@ describe('ProductsService', () => {
     await expect(service.update('t', 'p1', { price: 70 })).resolves.toBeTruthy();
   });
 
+  it('el precio incluye IVA: lo que cubre el costo es el subtotal', async () => {
+    const { service } = setUp();
+
+    await expect(service.create('t', { ...base, price: 69, cost: 60, taxRate: 0.16 })).rejects.toThrow('below cost');
+    await expect(service.create('t', { ...base, price: 70, cost: 60, taxRate: 0.16 })).resolves.toBeTruthy();
+    await expect(service.create('t', { ...base, price: 60, cost: 60, taxRate: 0 })).resolves.toBeTruthy();
+  });
+
   it('permite costo cero con cualquier precio', async () => {
     const { service } = setUp();
 

@@ -1,3 +1,5 @@
+import { priceLine } from '../common/money.js';
+
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 export interface ReportSaleItem {
@@ -8,6 +10,7 @@ export interface ReportSaleItem {
   unitCost: number;
   quantity: number;
   discount: number;
+  taxRate?: number;
   promotionName: string | null;
 }
 
@@ -88,7 +91,6 @@ export function buildReport(sales: ReportSale[], sessions: ReportSession[], opti
     subtotal += sale.subtotal;
     tax += sale.tax;
     total += sale.total;
-    discount += sale.discount;
 
     const terminal = byTerminal.get(sale.terminalId) ?? {
       terminalId: sale.terminalId,
@@ -110,8 +112,9 @@ export function buildReport(sales: ReportSale[], sessions: ReportSession[], opti
     }
 
     for (const item of sale.items) {
-      const lineDiscount = item.discount ?? 0;
-      const net = round2(item.unitPrice * item.quantity - lineDiscount);
+      // Los precios incluyen IVA; lo que entra al negocio y el costo de las promociones van sin él
+      const { net, discountNet: lineDiscount } = priceLine(item.unitPrice, item.quantity, item.discount ?? 0, item.taxRate ?? 0);
+      discount += lineDiscount;
       const lineCost = round2((item.unitCost ?? 0) * item.quantity);
       cost += lineCost;
       if (!item.unitCost) linesWithoutCost += 1;
