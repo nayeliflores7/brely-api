@@ -30,7 +30,8 @@ import { SuperAdminsModule } from '../super-admins/super-admins.module.js';
       inject: [ConfigService],
       useFactory: (c: ConfigService) => ({
         secret: c.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: Number(c.get('JWT_EXPIRES_IN_SECONDS') ?? 3600) },
+        // 24 horas si el .env no indica otra cosa
+        signOptions: { expiresIn: Number(c.get('JWT_EXPIRES_IN_SECONDS') ?? 86400) },
       }),
     }),
   ],
