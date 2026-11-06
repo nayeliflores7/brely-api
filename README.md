@@ -1,132 +1,199 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# brely-api
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API del sistema Brely (NestJS + MongoDB). La usan el panel web (`brely-webadmin`) y las terminales POS (`brely-pos`).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- Prefijo de todas las rutas: `/api/v1` (por ejemplo `http://localhost:3000/api/v1/version`).
+- Base de datos: MongoDB Atlas (clúster gratuito M0).
+- Versión actual: ver `package.json` y [CHANGELOG.md](CHANGELOG.md).
+- Reglas para agentes y para cambios de permisos y versiones: [AGENTS.md](AGENTS.md).
 
-## Description
+## Requisitos
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- Node.js 22 o superior.
+- Una base MongoDB (Atlas o local) y su cadena de conexión.
+- Opcional: [mongosh](https://www.mongodb.com/docs/mongodb-shell/) para limpiar la base desde la terminal.
 
-## Project setup
+## Variables de entorno (`.env`)
 
-```bash
-$ npm install
+El archivo `.env` va en la raíz del repo y **no se sube a git**. Crea uno con estas claves:
+
+| Variable | Obligatoria | Para qué sirve |
+|---|---|---|
+| `MONGO_URI` | Sí | Cadena de conexión. El nombre de la base va en la ruta (`.../brely-business?...`). |
+| `JWT_SECRET` | Sí | Secreto para firmar las sesiones. Una cadena larga y aleatoria; distinta en producción. |
+| `PORT` | No | Puerto de la API. Por defecto `3000`. |
+| `JWT_EXPIRES_IN_SECONDS` | No | Duración de la sesión del panel. Por defecto `86400` (24 h). |
+| `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD`, `SUPERADMIN_NAME` | Solo la primera vez | Si no existe ningún super admin, la API lo crea al arrancar con estos datos. |
+| `CORS_ORIGINS` | En producción | Dominios del panel separados por coma. Por defecto `http://localhost:4200`. |
+| `PANEL_URL` | En producción | Dirección del panel para los enlaces de "recuperar contraseña". Si falta, usa el primer valor de `CORS_ORIGINS`. |
+| `SMTP_USER`, `SMTP_APP_PASSWORD` | Para correo | Cuenta y contraseña de aplicación de Gmail. Sin ellas no se envían el reporte diario ni la recuperación de contraseña. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | No | Por defecto Gmail: `smtp.gmail.com`, `465`, seguro. Cámbialos para usar otro proveedor. |
+| `MIN_POS_VERSION` | No | Versión mínima del POS aceptada. Un POS más viejo recibe 426 y muestra "Actualiza el POS". Sin definir, acepta todos. |
+| `REPORT_EMAIL_TICK_MS` | No | Cada cuánto revisa si toca enviar el reporte diario. Por defecto `60000` (1 min). |
+
+Ejemplo mínimo para desarrollo:
+
+```env
+PORT=3000
+MONGO_URI=mongodb+srv://USUARIO:CONTRASENA@cluster0.xxxxx.mongodb.net/brely-business?retryWrites=true&w=majority
+JWT_SECRET=cambia-esto-por-algo-largo-y-aleatorio
+JWT_EXPIRES_IN_SECONDS=86400
+SUPERADMIN_EMAIL=admin@ejemplo.com
+SUPERADMIN_PASSWORD=una-contrasena-segura
+SUPERADMIN_NAME=Administrador
 ```
 
-## Compile and run the project
+## Desarrollo
+
+Instalar dependencias:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+Arrancar con recarga automática (http://localhost:3000/api/v1):
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Comprobar que responde:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+curl http://localhost:3000/api/v1/version
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Al arrancar por primera vez sobre una base vacía, la API crea el super admin con los datos `SUPERADMIN_*`. Con él entras al panel, creas el negocio, sus usuarios y sus terminales.
 
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-To add it to this project, run this and approve the code it prints at [observe.nestjs.com/link](https://observe.nestjs.com/link) - signing up for free if you have no account:
+### Seeder de permisos y roles
 
 ```bash
-$ npx @nestjs/observe link
+npm run seed
 ```
 
-It installs `@nestjs/observe`, wires it into `AppModule` and `main.ts`, and writes the app key and secret into `.env`, which every `nest start` script (`start`, `start:dev`, `start:debug`) then loads. In production, set `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` in the environment instead.
+Compila y crea en cada negocio los permisos del catálogo y los roles base que falten. No modifica lo que ya existe. Ejecútalo después de agregar o renombrar un permiso (ver "Permisos" en [AGENTS.md](AGENTS.md)).
 
-Or do it by hand:
+### Pruebas y calidad
+
+| Comando | Qué hace |
+|---|---|
+| `npm test` | Pruebas unitarias (Vitest). |
+| `npm run test:watch` | Pruebas en modo observación. |
+| `npm run test:cov` | Pruebas con cobertura. |
+| `npm run lint` | Revisión con oxlint. |
+| `npm run format` | Formato con Prettier. |
+
+`npm run test:e2e` aún tiene solo la prueba generada por Nest (`GET /`), que falla porque esa ruta no está registrada.
+
+### Probar sin tocar la base real
+
+Nunca hagas pruebas sobre la base del negocio. Para probar, cambia el nombre de la base en `MONGO_URI` por uno temporal (por ejemplo `brely-e2e-prueba`), arranca la API y bórrala al terminar (ver abajo).
+
+## Borrar la base de datos
+
+**Esto elimina todos los datos del negocio y no se puede deshacer.** Haz un respaldo antes si hay algo que conservar.
+
+La cuenta de Atlas no tiene permiso para `dropDatabase`, así que se borran las colecciones. Con mongosh (reemplaza la cadena por la de la base que quieres vaciar):
 
 ```bash
-$ npm install @nestjs/observe
+mongosh "mongodb+srv://USUARIO:CONTRASENA@cluster0.xxxxx.mongodb.net/brely-e2e-prueba" --eval "db.getCollectionNames().forEach(c => db.getCollection(c).drop())"
 ```
 
-Then follow the [setup guide](https://docs.nestjs.com/observability/sdk) - it takes a single import and an app key.
+También se puede hacer desde Atlas: **Data Explorer**, selecciona la base y elimina cada colección.
 
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
+Después:
 
-## Resources
+1. Arranca la API: vuelve a crear el super admin con `SUPERADMIN_*`.
+2. Si borraste la base de un negocio que ya tenía terminales, borra también la base local de cada POS (`npm run db:reset` en `brely-pos`) y vuelve a activarlas.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Respaldo
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Atlas M0 no hace respaldos automáticos. Para exportar la base a una carpeta:
 
-## Support
+```bash
+mongodump --uri "mongodb+srv://USUARIO:CONTRASENA@cluster0.xxxxx.mongodb.net/brely-business" --out ./respaldo
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Y para restaurarla:
 
-## Stay in touch
+```bash
+mongorestore --uri "mongodb+srv://USUARIO:CONTRASENA@cluster0.xxxxx.mongodb.net/brely-business" ./respaldo/brely-business
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+`mongodump` y `mongorestore` vienen en las [MongoDB Database Tools](https://www.mongodb.com/docs/database-tools/). La carpeta de respaldo contiene datos del negocio: no la subas a git.
 
-## License
+## Compilar para producción
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```bash
+npm run build
+```
+
+```bash
+npm run start:prod
+```
+
+`build` genera `dist/` y `start:prod` ejecuta `node dist/main`. En el servidor, define las variables de entorno en la plataforma en lugar de subir el `.env`.
+
+## Despliegue
+
+`brely-api` y `brely-webadmin` se publican juntos.
+
+### Configuración de producción
+
+- `MONGO_URI` de la base del negocio y un `JWT_SECRET` nuevo, distinto al de desarrollo.
+- `CORS_ORIGINS` y `PANEL_URL` con la dirección pública del panel (por ejemplo `https://brely-panel.pages.dev`).
+- En Atlas, **Network Access** debe permitir la IP del servidor. Las plataformas gratuitas no tienen IP fija, así que suele hacer falta permitir `0.0.0.0/0`; en ese caso usa un usuario de base con contraseña fuerte y solo los permisos necesarios.
+- El panel se compila con la dirección pública de la API (ver el README de `brely-webadmin`).
+- Las terminales POS deben apuntar a la API pública (ver "Dirección de la API" en el README de `brely-pos`).
+
+### Plataformas gratuitas
+
+| Plataforma | Comandos | Considera |
+|---|---|---|
+| Render (Web Service gratis) | Build `npm ci && npm run build`, Start `npm run start:prod` | Se apaga tras 15 min sin tráfico (la primera llamada tarda ~1 min). Bloquea el envío SMTP. |
+| Koyeb | Los mismos | Se apaga tras 1 h sin tráfico. |
+| Oracle Cloud Always Free | VM propia con Node y un administrador de procesos (por ejemplo pm2) | Siempre encendida, pero tú la administras. Bloquea SMTP. |
+| Google Cloud Run | Contenedor | Pide tarjeta; se apaga sin tráfico salvo que pagues una instancia mínima. |
+
+Dos funciones necesitan atención si la plataforma se apaga o bloquea SMTP:
+
+- **Reporte diario por correo:** lo programa la propia API con un temporizador. Si el servidor está apagado a la hora del envío, no sale.
+- **Correo (reporte y recuperación de contraseña):** usa Gmail por SMTP. Donde SMTP esté bloqueado hay que usar un proveedor de correo por HTTPS.
+
+Las terminales no dependen de que la API esté siempre encendida: venden sin conexión y sincronizan cuando la API vuelve a responder.
+
+### Publicar una versión
+
+```bash
+npm version patch
+```
+
+Usa `patch` para correcciones, `minor` para funciones nuevas y `major` para cambios incompatibles. Sube el número en `package.json` y crea la etiqueta `vX.Y.Z`. Luego:
+
+1. Agrega lo que cambió a [CHANGELOG.md](CHANGELOG.md), en palabras de quien usa el sistema.
+2. Sube los cambios y la etiqueta:
+
+   ```bash
+   git push --follow-tags
+   ```
+
+3. Despliega la API y el panel.
+
+Reglas de compatibilidad con terminales: la API nueva convive con POS anteriores. Los cambios en la sincronización solo pueden agregar campos opcionales. Si un cambio no puede convivir con versiones viejas, primero se publica el POS que lo soporta y, cuando las terminales están actualizadas, se sube `MIN_POS_VERSION`.
+
+## Estructura
+
+| Carpeta | Contenido |
+|---|---|
+| `src/auth` | Inicio de sesión, JWT, recuperación de contraseña. |
+| `src/tenants` | Negocios y su configuración (prefijo de códigos, etc.). |
+| `src/terminals` | Alta, activación, desvinculación y recuperación de terminales. |
+| `src/sync` | Rutas que usan las terminales (`/sync/*`, protegidas por `TerminalAuthGuard`). |
+| `src/roles`, `src/permissions` | Catálogo de permisos y roles base. |
+| `src/products`, `src/categories`, `src/units`, `src/stock`, `src/promotions` | Catálogo e inventario. |
+| `src/sales`, `src/cash` | Ventas y caja. |
+| `src/reports` | Dashboards y reporte diario por correo. |
+| `src/mail` | Envío de correo. |
+| `src/audit` | Bitácora de acciones. |
+| `src/seed` | Seeder de permisos y roles. |
+| `src/common` | Utilidades compartidas: dinero e IVA, versiones, decoradores. |
