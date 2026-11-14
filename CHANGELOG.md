@@ -4,7 +4,8 @@ Versiones con el formato MAYOR.MENOR.PARCHE. Cómo publicar una: ver "Versiones"
 
 ## Sin publicar
 
-- **El ambiente en `/version`.** Responde también `env`: "DEV" salvo que `NODE_ENV=production`, y vacío en producción. En el servidor hay que definir `NODE_ENV=production`.
+- **El ambiente en `/version`.** Responde también `env`: lo que diga `APP_ENV` ("DEV" en la nube de pruebas) y, sin ella, "DEV" salvo que `NODE_ENV=production`. Vacío en producción.
+- **Despliegue de pruebas en Render.** `render.yaml` despliega la rama `develop` con el plan gratuito, con `APP_ENV=DEV` y sus propias variables.
 - **Rol Empaquetador y permiso "Ajustar precios".** Nuevo rol base para quien prepara paquetes de producto a granel: da de alta productos con precio y costo, cambia precios, ajusta el inventario, ve los costos e imprime etiquetas; no vende ni ve reportes. Cambiar el precio, el costo o el IVA es ahora un permiso propio (`products.price`) que no deja editar ni eliminar productos; quien administra productos sigue pudiendo. Ruta nueva `PATCH /products/:id/price`. Después de actualizar, reiniciar la API y ejecutar `npm run seed`: crea el rol Empaquetador en cada negocio. Al Encargado y a otros roles ya existentes se les activa "Ajustar precios" en Roles si lo necesitan.
 - **Gastos fijos por semana o quincena.** Dos frecuencias nuevas: una semana pesa 4.33 veces al mes (52 semanas ÷ 12 meses) y una quincena, 2 veces.
 - **Cuándo se vende más.** El reporte de ventas trae el promedio por día de la semana y las ventas por hora (en la zona horaria del negocio), con el mejor día, los días más flojos, la hora más fuerte y la franja que concentra el 80 % de las ventas. El Excel agrega las hojas "Por día de la semana" y "Por hora".

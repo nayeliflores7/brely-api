@@ -132,11 +132,38 @@ npm run build
 npm run start:prod
 ```
 
-`build` genera `dist/` y `start:prod` ejecuta `node dist/main`. En el servidor, define las variables de entorno en la plataforma en lugar de subir el `.env`. Incluye `NODE_ENV=production`: sin ella, el panel muestra "DEV" junto a la versión de la API.
+`build` genera `dist/` y `start:prod` ejecuta `node dist/main`. En el servidor, define las variables de entorno en la plataforma en lugar de subir el `.env`. Incluye `NODE_ENV=production`. El ambiente que se ve junto a la versión sale de `APP_ENV`: `DEV` en pruebas; en producción se deja vacía u omitida (y sin `APP_ENV`, `NODE_ENV=production` cuenta como producción).
 
 ## Despliegue
 
 `brely-api` y `brely-webadmin` se publican juntos.
+
+## Ambiente de pruebas en la nube
+
+La rama `develop` se despliega sola en Render (plan gratuito) con el archivo [render.yaml](render.yaml); `main` no se despliega todavía. El ambiente de nube de pruebas muestra **DEV** junto a la versión en el panel y en el POS (variable `APP_ENV=DEV`).
+
+Primera vez, en este orden:
+
+1. **Atlas:** en el mismo clúster, usa la base `brely-develop` (se crea sola al primer uso). Crea un usuario de base de datos exclusivo, con rol *readWrite* solo sobre esa base. En **Network Access** permite `0.0.0.0/0`: Render gratis no tiene IP fija.
+2. **Render:** *New → Blueprint*, elige el repositorio `brely-api` y la rama `develop`. Render lee `render.yaml` y te pide los valores marcados `sync: false`:
+   - `MONGO_URI`: la cadena de la base `brely-develop` con su usuario.
+   - `CORS_ORIGINS` y `PANEL_URL`: la dirección del panel de pruebas (por ejemplo `https://brely-panel-dev.pages.dev`), sin diagonal final. Si aún no la tienes, déjalas con un valor provisional y corrígelas después.
+   - `SUPERADMIN_EMAIL` y `SUPERADMIN_PASSWORD`: los de este ambiente, distintos a los locales.
+3. **Comprobar:** abre `https://TU-SERVICIO.onrender.com/api/v1/version`. Debe responder las versiones y `"env":"DEV"`. La primera llamada tarda alrededor de un minuto si el servicio estaba dormido.
+4. **Datos iniciales:** el super admin se crea solo al arrancar con `SUPERADMIN_*`. El catálogo de permisos y los roles base los crea `npm run seed`, que hay que correr **una vez, desde tu computadora y antes de crear el primer negocio**, apuntando a la base de pruebas. En PowerShell:
+
+```powershell
+$env:MONGO_URI = "mongodb+srv://USUARIO:CONTRASENA@cluster0.xxxxx.mongodb.net/brely-develop"
+npm run seed
+```
+
+Cuando agregues permisos o roles nuevos en una versión, repite el seed contra esa base (y contra la de producción cuando exista).
+
+Cosas de este ambiente:
+
+- **Se duerme** tras 15 minutos sin tráfico, y no se mantiene despierto a propósito. Las terminales venden sin conexión y sincronizan cuando responde.
+- **No envía correo** (Render gratis bloquea SMTP): el reporte diario y la recuperación de contraseña no funcionan aquí.
+- Cada cambio en `develop` redespliega solo; si compila mal, Render conserva la versión anterior.
 
 ### Configuración de producción
 

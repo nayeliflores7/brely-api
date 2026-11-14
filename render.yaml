@@ -1,0 +1,41 @@
+# Ambiente de pruebas en la nube (Render, plan gratuito). Se despliega solo al subir cambios a la rama develop.
+# Las variables marcadas "sync: false" se capturan una vez en el panel de Render: nunca van en este archivo.
+# Cómo se usa: README.md, sección "Ambiente de pruebas en la nube".
+services:
+  - type: web
+    name: brely-api-dev
+    runtime: node
+    plan: free
+    branch: develop
+    autoDeployTrigger: commit
+    # Con NODE_ENV=production, npm ci omitiría las dependencias de desarrollo y Nest no podría compilar
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/v1/version
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      # Lo que se ve junto a la versión en el panel y en el POS: DEV en pruebas, vacío en producción
+      - key: APP_ENV
+        value: DEV
+      - key: JWT_EXPIRES_IN_SECONDS
+        value: 86400
+      # Un secreto propio de este ambiente, generado por Render
+      - key: JWT_SECRET
+        generateValue: true
+      # Base brely-develop de Atlas, con su propio usuario
+      - key: MONGO_URI
+        sync: false
+      # Dirección del panel de pruebas, sin diagonal final (https://brely-panel-dev.pages.dev)
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PANEL_URL
+        sync: false
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: SUPERADMIN_PASSWORD
+        sync: false
+      - key: SUPERADMIN_NAME
+        value: Super Admin
