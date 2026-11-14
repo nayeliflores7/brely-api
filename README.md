@@ -147,7 +147,7 @@ Primera vez, en este orden:
 1. **Atlas:** en el mismo clúster, usa la base `brely-develop` (se crea sola al primer uso). Crea un usuario de base de datos exclusivo, con rol *readWrite* solo sobre esa base. En **Network Access** permite `0.0.0.0/0`: Render gratis no tiene IP fija.
 2. **Render:** *New → Blueprint*, elige el repositorio `brely-api` y la rama `develop`. Render lee `render.yaml` y te pide los valores marcados `sync: false`:
    - `MONGO_URI`: la cadena de la base `brely-develop` con su usuario.
-   - `CORS_ORIGINS` y `PANEL_URL`: la dirección del panel de pruebas (por ejemplo `https://brely-panel-dev.pages.dev`), sin diagonal final. Si aún no la tienes, déjalas con un valor provisional y corrígelas después.
+   - `CORS_ORIGINS` y `PANEL_URL`: la dirección del panel de pruebas (por ejemplo `https://brely-webadmin.TU-SUBDOMINIO.workers.dev`), sin diagonal final. Si aún no la tienes, déjalas con un valor provisional y corrígelas después.
    - `SUPERADMIN_EMAIL` y `SUPERADMIN_PASSWORD`: los de este ambiente, distintos a los locales.
 3. **Comprobar:** abre `https://TU-SERVICIO.onrender.com/api/v1/version`. Debe responder las versiones y `"env":"DEV"`. La primera llamada tarda alrededor de un minuto si el servicio estaba dormido.
 4. **Datos iniciales:** el super admin se crea solo al arrancar con `SUPERADMIN_*`. El catálogo de permisos y los roles base los crea `npm run seed`, que hay que correr **una vez, desde tu computadora y antes de crear el primer negocio**, apuntando a la base de pruebas. En PowerShell:
