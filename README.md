@@ -132,7 +132,7 @@ npm run build
 npm run start:prod
 ```
 
-`build` genera `dist/` y `start:prod` ejecuta `node dist/main`. En el servidor, define las variables de entorno en la plataforma en lugar de subir el `.env`.
+`build` genera `dist/` y `start:prod` ejecuta `node dist/main`. En el servidor, define las variables de entorno en la plataforma en lugar de subir el `.env`. Incluye `NODE_ENV=production`: sin ella, el panel muestra "DEV" junto a la versión de la API.
 
 ## Despliegue
 
