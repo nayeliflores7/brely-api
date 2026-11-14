@@ -18,6 +18,7 @@ import { UnitsModule } from './units/units.module.js';
 import { SeedModule } from './seed/seed.module.js';
 import { PromotionsModule } from './promotions/promotions.module.js';
 import { ReportsModule } from './reports/reports.module.js';
+import { FinanceModule } from './finance/finance.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { AuditSyncModule } from './audit/audit-sync.module.js';
 
@@ -44,6 +45,7 @@ import { AuditSyncModule } from './audit/audit-sync.module.js';
     SeedModule,
     PromotionsModule,
     ReportsModule,
+    FinanceModule,
     AuditModule,
     AuditSyncModule,
   ],

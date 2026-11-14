@@ -59,6 +59,8 @@ export class DashboardService {
         count: today.totals.count,
         average: today.totals.average,
         discount: today.totals.discount,
+        manualDiscount: today.totals.manualDiscount,
+        manualSales: today.discounts.salesWithDiscount,
         cancelledCount: today.totals.cancelledCount,
         cancelledTotal: today.totals.cancelledTotal,
         ...(todayCosts ? { profit: todayCosts.profit, margin: todayCosts.margin } : {}),
@@ -69,6 +71,7 @@ export class DashboardService {
         total: month.totals.total,
         count: month.totals.count,
         promotionDiscount: month.promotions.discount,
+        manualDiscount: month.discounts.discount,
         ...(monthCosts
           ? {
               profit: monthCosts.profit,

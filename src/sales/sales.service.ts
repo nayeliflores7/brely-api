@@ -43,6 +43,7 @@ export class SalesService implements OnModuleInit {
         id: d._id, terminalId: d.terminalId, origin: d.origin, folio: d.folio,
         sessionId: d.sessionId, createdAt: d.soldAt,
         subtotal: d.subtotal, tax: d.tax, total: d.total, discount: d.discount,
+        manualDiscount: d.manualDiscount ?? 0, discountReason: d.discountReason ?? '',
         paymentMethod: d.paymentMethod, received: d.received, change: d.change,
         status: d.status, cancelledAt: d.cancelledAt, cancelReason: d.cancelReason,
         userId: d.createdBy, userName: d.createdByName, cancelledBy: d.cancelledBy,
@@ -74,11 +75,12 @@ export class SalesService implements OnModuleInit {
         origin: 'pos', lastWriteOrigin: 'pos', folio: dto.folio,
         sessionId: dto.sessionId ?? null, soldAt: new Date(dto.createdAt),
         items: dto.items.map((i) => ({
-          ...i, unitCost: i.unitCost ?? 0, discount: i.discount ?? 0,
+          ...i, unitCost: i.unitCost ?? 0, discount: i.discount ?? 0, manualDiscount: i.manualDiscount ?? 0,
           promotionId: i.promotionId ?? null, promotionName: i.promotionName ?? null,
         })),
         payments, paymentMethod: this.primary(payments),
         subtotal: dto.subtotal, tax: dto.tax, total: dto.total, discount: dto.discount ?? 0,
+        manualDiscount: dto.manualDiscount ?? 0, discountReason: dto.discountReason ?? '',
         received: dto.received, change: dto.change, status: 'completed',
         createdBy: dto.userId ?? null, createdByName: dto.userName ?? '',
       }],
@@ -134,7 +136,8 @@ export class SalesService implements OnModuleInit {
         return {
           productId: p._id, barcode: p.barcode, name: p.name, unit: p.unit, unitPrice,
           unitCost: p.cost, taxRate: p.taxRate, quantity: i.quantity, discount,
-          promotionId: null, promotionName: null,
+          // Lo que da el panel es un descuento a mano, no una promoción
+          manualDiscount: discount, promotionId: null, promotionName: null,
         };
       });
       subtotal = round2(subtotal);
@@ -161,7 +164,7 @@ export class SalesService implements OnModuleInit {
           origin: 'admin', lastWriteOrigin: 'admin', folio,
           sessionId: open?._id ?? null, // sin sesión abierta no afecta ningún corte
           soldAt, items, payments, paymentMethod: this.primary(payments),
-          subtotal, tax, total, discount: round2(discountTotal), received,
+          subtotal, tax, total, discount: round2(discountTotal), manualDiscount: round2(discountTotal), received,
           change: round2(received - total), status: 'completed',
           createdBy: user.id, createdByName: user.fullName,
         }],

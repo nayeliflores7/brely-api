@@ -13,7 +13,10 @@ export class SaleItem {
   @Prop({ default: 0 }) unitCost: number;
   @Prop({ default: 0.16 }) taxRate: number;
   @Prop({ required: true }) quantity: number;
+  // Todo lo que se le quitó a la línea: promoción más descuento manual
   @Prop({ default: 0 }) discount: number;
+  // La parte de `discount` que dio el cajero
+  @Prop({ default: 0 }) manualDiscount: number;
   @Prop({ type: String, default: null }) promotionId: string | null;
   @Prop({ type: String, default: null }) promotionName: string | null;
 }
@@ -50,6 +53,8 @@ export class Sale {
   @Prop({ required: true }) tax: number;
   @Prop({ required: true }) total: number;
   @Prop({ default: 0 }) discount: number;
+  @Prop({ default: 0 }) manualDiscount: number;
+  @Prop({ default: '' }) discountReason: string;
   @Prop({ type: String, required: true, enum: ['cash', 'card', 'transfer'] }) paymentMethod: string;
   @Prop({ required: true }) received: number;
   @Prop({ required: true }) change: number;

@@ -2,6 +2,16 @@
 
 Versiones con el formato MAYOR.MENOR.PARCHE. Cómo publicar una: ver "Versiones" en `AGENTS.md`.
 
+## Sin publicar
+
+- **Cuándo se vende más.** El reporte de ventas trae el promedio por día de la semana y las ventas por hora (en la zona horaria del negocio), con el mejor día, los días más flojos, la hora más fuerte y la franja que concentra el 80 % de las ventas. El Excel agrega las hojas "Por día de la semana" y "Por hora".
+- **Utilidad por producto.** `GET /finance/products?period=month|last30|lastMonth` (permiso de ver las finanzas): cuánto vendió y cuánto dejó cada producto, su margen y su parte de la utilidad total; marca los que se vendieron por debajo de su costo y los que no tienen costo capturado.
+- **Finanzas.** Gastos fijos del negocio (renta, luz, sueldos...) con su frecuencia de pago, y un resumen con el punto de equilibrio (gastos fijos ÷ margen de utilidad de los últimos 30 días), el avance del mes, la utilidad estimada del mes y el valor del inventario. Dos permisos nuevos, **Ver las finanzas** y **Administrar gastos fijos**, solo para el Propietario por defecto: después de actualizar, reiniciar la API y ejecutar `npm run seed`. Los cambios a los gastos quedan en la auditoría.
+- **La lista de resurtido sugiere cuánto comprar** (parámetro `days`, de 1 a 90, 14 por defecto): lo que alcanza para esos días de ventas más el mínimo; los productos sin ventas recientes, el doble del mínimo.
+- **Lista de resurtido en PDF.** `GET /stock/restock` (la lista) y `GET /stock/restock/export` (el PDF) con el permiso de ver el inventario: los productos en alerta y los que están por agotarse, por categoría, con casilla para marcar y espacio para anotar cuánto comprar.
+- **Descuentos en los reportes.** Los reportes, el Excel y el resumen del día separan lo que quitaron las promociones de lo que descontó el cajero, con quién lo dio y por qué. El correo diario agrega la sección solo si hubo descuentos. "Utilidad sin promociones" ya no resta los descuentos de caja y se agrega "utilidad sin ningún descuento".
+- **Descuentos dados en caja.** Las ventas guardan cuánto del descuento dio el cajero y por qué. Permiso nuevo **Dar descuentos** (`sales.discount`): lo tienen Propietario y Encargado; a los demás roles se les activa en Roles. Después de actualizar, ejecutar `npm run seed`.
+
 ## 0.1.0 · 2026-11-05
 
 Primera versión con número. Lo que ya hace:

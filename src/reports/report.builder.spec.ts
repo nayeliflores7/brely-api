@@ -203,3 +203,76 @@ describe('buildReport con IVA incluido en el precio', () => {
     expect(result.profitability.profit).toBe(22);
   });
 });
+
+describe('descuentos dados en caja', () => {
+  const given = (values: Partial<ReportSale> = {}, itemValues: Partial<ReportSale['items'][number]> = {}) =>
+    sale([item({ unitPrice: 100, discount: 10, manualDiscount: 10, ...itemValues })], {
+      manualDiscount: 10,
+      discountReason: 'cliente frecuente',
+      createdByName: 'ANA',
+      ...values,
+    });
+
+  it('se cuentan aparte de las promociones', () => {
+    const report = buildReport([given()], [], options);
+
+    expect(report.totals).toMatchObject({ gross: 100, discount: 10, promotionDiscount: 0, manualDiscount: 10 });
+    expect(report.promotions).toEqual({ discount: 0, salesWithPromotion: 0, rows: [] });
+    expect(report.discounts).toMatchObject({ discount: 10, salesWithDiscount: 1, percentOfGross: 10 });
+  });
+
+  it('dice quién los dio y por qué', () => {
+    const report = buildReport(
+      [given(), given({ discountReason: 'PRODUCTO MALTRATADO', createdByName: 'LUIS' }), given({ discountReason: '', createdByName: undefined })],
+      [],
+      options,
+    );
+
+    expect(report.discounts.byUser).toEqual([
+      { name: 'ANA', sales: 1, discount: 10 },
+      { name: 'LUIS', sales: 1, discount: 10 },
+      { name: '—', sales: 1, discount: 10 },
+    ]);
+    expect(report.discounts.byReason.map((r) => r.reason).sort()).toEqual(['CLIENTE FRECUENTE', 'PRODUCTO MALTRATADO', 'SIN MOTIVO']);
+  });
+
+  it('en una línea con promoción y descuento, cada uno cuenta lo suyo', () => {
+    // 3 piezas de $10: la promoción quita $10 y el cajero $2 más
+    const report = withCosts([
+      sale([item({ quantity: 3, discount: 12, manualDiscount: 2, promotionName: '3X2' })], { manualDiscount: 2, createdByName: 'ANA' }),
+    ]);
+
+    expect(report.totals).toMatchObject({ gross: 30, discount: 12, promotionDiscount: 10, manualDiscount: 2 });
+    expect(report.promotions.rows).toEqual([{ name: '3X2', units: 3, discount: 10, sales: 1 }]);
+    expect(report.discounts.discount).toBe(2);
+    expect(report.profitability).toMatchObject({ profit: 0, profitWithoutPromotions: 10, profitWithoutDiscounts: 12 });
+    // El descuento total de la línea sigue siendo la suma
+    expect(report.topProducts[0].discount).toBe(12);
+  });
+
+  it('el descuento sale sin IVA', () => {
+    // $116 con IVA, $11.60 de descuento: $10 sin IVA
+    const report = buildReport(
+      [sale([item({ unitPrice: 116, taxRate: 0.16, discount: 11.6, manualDiscount: 11.6 })], { manualDiscount: 11.6 })],
+      [],
+      options,
+    );
+
+    expect(report.discounts.discount).toBe(10);
+    expect(report.totals.manualDiscount).toBe(10);
+  });
+
+  it('una venta de antes de los descuentos manuales sigue contando como promoción', () => {
+    const report = buildReport([sale([item({ quantity: 3, discount: 10, promotionName: '3X2' })])], [], options);
+
+    expect(report.totals).toMatchObject({ promotionDiscount: 10, manualDiscount: 0 });
+    expect(report.discounts).toEqual({ discount: 0, salesWithDiscount: 0, percentOfGross: 0, byUser: [], byReason: [] });
+  });
+
+  it('una venta cancelada no cuenta', () => {
+    const report = buildReport([given({ status: 'cancelled' })], [], options);
+
+    expect(report.discounts.salesWithDiscount).toBe(0);
+    expect(report.totals.manualDiscount).toBe(0);
+  });
+});

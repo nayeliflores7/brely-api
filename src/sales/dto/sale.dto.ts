@@ -21,7 +21,8 @@ export class PushSaleItemDto {
   @IsOptional() @IsNumber() @Min(0) unitCost?: number;
   @IsNumber() @Min(0) @Max(1) taxRate: number;
   @IsNumber() @Min(0.0001) quantity: number;
-  @IsOptional() @IsNumber() @Min(0) discount?: number;
+  @IsOptional() @IsNumber() @Min(0) discount?: number; // todo lo que se le quitó a la línea
+  @IsOptional() @IsNumber() @Min(0) manualDiscount?: number; // la parte que dio el cajero
   @IsOptional() @IsString() @MaxLength(64) promotionId?: string | null;
   @IsOptional() @IsString() @MaxLength(200) promotionName?: string | null;
 }
@@ -40,6 +41,8 @@ export class PushSaleDto {
   @IsNumber() tax: number;
   @IsNumber() total: number;
   @IsOptional() @IsNumber() @Min(0) discount?: number;
+  @IsOptional() @IsNumber() @Min(0) manualDiscount?: number;
+  @IsOptional() @IsString() @MaxLength(200) discountReason?: string;
 
   @IsArray() @ArrayMinSize(1) @ArrayMaxSize(3)
   @ValidateNested({ each: true }) @Type(() => SalePaymentDto)

@@ -20,6 +20,7 @@ const NAME_SOURCES: Record<string, { collection: string; field: string }> = {
   roles: { collection: 'roles', field: 'name' },
   terminals: { collection: 'terminals', field: 'name' },
   tenants: { collection: 'tenants', field: 'name' },
+  finance: { collection: 'fixed_expenses', field: 'name' },
 };
 
 export interface AuditEntry {

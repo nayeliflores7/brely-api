@@ -8,12 +8,15 @@ export const PERMISSION_CATALOG = [
   { key: 'settings.manage', scope: 'admin', name: 'Configurar el negocio', description: 'Editar los datos del negocio' },
   { key: 'terminals.manage', scope: 'admin', name: 'Administrar terminales', description: 'Crear, deshabilitar y restablecer terminales' },
   { key: 'cash.manage', scope: 'admin', name: 'Cerrar cajas desde el panel', description: 'Cerrar una caja de cualquier terminal desde el panel web' },
+  { key: 'finance.view', scope: 'admin', name: 'Ver las finanzas', description: 'Ver el punto de equilibrio, la utilidad del mes y el valor del inventario' },
+  { key: 'finance.manage', scope: 'admin', name: 'Administrar gastos fijos', description: 'Registrar, editar y borrar los gastos fijos del negocio (renta, luz, sueldos...)' },
   { key: 'audit.view', scope: 'admin', name: 'Ver la auditoría', description: 'Consultar quién hizo qué y cuándo en el negocio' },
 
   // ── Punto de venta ──
   { key: 'sales.create', scope: 'pos', name: 'Vender', description: 'Registrar ventas' },
   { key: 'sales.view', scope: 'pos', name: 'Ver todas las ventas', description: 'Consultar el historial completo; sin este permiso solo se ven las del turno actual' },
   { key: 'sales.cancel', scope: 'pos', name: 'Cancelar ventas', description: 'Cancelar una venta y devolver su stock' },
+  { key: 'sales.discount', scope: 'pos', name: 'Dar descuentos', description: 'Dar un descuento en un producto o en toda la venta al cobrar' },
   { key: 'reports.view', scope: 'pos', name: 'Ver reportes', description: 'Ver ventas del día, productos más vendidos y estadísticas' },
   { key: 'costs.view', scope: 'pos', name: 'Ver costos y utilidad', description: 'Ver el costo de los productos y la utilidad de las ventas' },
   { key: 'cash.operate', scope: 'pos', name: 'Abrir y cerrar caja', description: 'Abrir un turno y hacer el corte de caja' },
@@ -38,6 +41,8 @@ const NOT_FOR_MANAGERS: readonly Permission[] = [
   'settings.manage',
   'terminals.manage',
   'terminal.unlink', // borra el equipo: solo el propietario, salvo que lo active en Roles
+  'finance.view', // cuánto gana el negocio: solo el propietario, salvo que lo active en Roles
+  'finance.manage',
 ];
 
 export const OWNER_ROLE_NAME = 'Propietario';

@@ -102,6 +102,14 @@ export function renderDailyReport(data: DailyReportData) {
     sections.push(heading('Promociones'), `<p style="margin:0 0 8px;font-size:13px;color:${COLORS.text}">Dejaron de entrar <strong>${escapeHtml(money(report.promotions.discount))}</strong> sin IVA, a precio de venta.${p ? ` Sin promociones la utilidad habría sido de ${escapeHtml(money(p.profitWithoutPromotions))}.` : ''}</p>`);
     sections.push(table([{ label: 'Promoción' }, { label: 'Piezas', right: true }, { label: 'Dejó de entrar', right: true }], report.promotions.rows.map((r) => [r.name, qty(r.units), money(r.discount)])));
   }
+  // Solo si el cajero dio descuentos: un día sin ellos no ocupa lugar en el correo
+  const given = report.discounts;
+  if (given.salesWithDiscount > 0) {
+    sections.push(heading('Descuentos dados en caja'), `<p style="margin:0 0 8px;font-size:13px;color:${COLORS.text}">Se dieron <strong>${escapeHtml(money(given.discount))}</strong> sin IVA en ${given.salesWithDiscount} ${given.salesWithDiscount === 1 ? 'venta' : 'ventas'} (${given.percentOfGross.toFixed(1)} % del importe antes de descuentos).</p>`);
+    sections.push(table([{ label: 'Cajero' }, { label: 'Ventas', right: true }, { label: 'Descuento', right: true }], given.byUser.map((r) => [r.name, String(r.sales), money(r.discount)])));
+    sections.push(`<div style="height:8px"></div>`, table([{ label: 'Motivo' }, { label: 'Ventas', right: true }, { label: 'Descuento', right: true }], given.byReason.map((r) => [r.reason, String(r.sales), money(r.discount)])));
+  }
+
   if (p && p.belowCostLoss > 0) {
     sections.push(notice(`De tu bolsillo: ${money(p.belowCostLoss)} por vender bajo costo (${p.belowCost.map((b) => b.name).slice(0, 5).join(', ')}).`, COLORS.dangerBg, COLORS.danger));
   }
@@ -140,6 +148,9 @@ ${sections.join('\n')}
     `Ticket promedio: ${money(totals.average)}`,
     ...(p ? [`Utilidad: ${money(p.profit)}`] : []),
     `Dejó de entrar por promociones: ${money(report.promotions.discount)}`,
+    ...(report.discounts.salesWithDiscount > 0
+      ? [`Descuentos dados en caja: ${money(report.discounts.discount)} en ${report.discounts.salesWithDiscount} ventas`, ...report.discounts.byUser.map((r) => `  ${r.name}: ${money(r.discount)} (${r.sales} ventas)`)]
+      : []),
     ...(p && p.belowCostLoss > 0 ? [`De tu bolsillo, por vender bajo costo: ${money(p.belowCostLoss)}`] : []),
     ...report.byTerminal.map((t) => `${t.name}: ${money(t.total)}`),
     ...data.terminalAlerts.map((t) => `Puede faltar información de ${t.name}: ${t.problem}`),

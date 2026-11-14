@@ -53,7 +53,7 @@ export class ReportsService {
     const [sales, sessions, options] = await Promise.all([
       this.sales
         .find({ ...scope, soldAt: range, deletedAt: null })
-        .select('terminalId soldAt status subtotal tax total discount items payments')
+        .select('terminalId soldAt status subtotal tax total discount manualDiscount discountReason createdByName items payments')
         .lean<ReportSale[]>(),
       this.sessions
         .find({ ...scope, status: 'closed', closedAt: range, deletedAt: null })
@@ -96,7 +96,8 @@ export class ReportsService {
     const { totals } = report;
     summary.addRows([
       ['Subtotal antes de descuentos', totals.gross],
-      ['Descuentos por promociones', -totals.discount],
+      ['Descuentos por promociones', -totals.promotionDiscount],
+      ['Descuentos dados en caja', -totals.manualDiscount],
       ['Subtotal', totals.subtotal],
       ['IVA', totals.tax],
       ['Total vendido', totals.total],
@@ -110,6 +111,7 @@ export class ReportsService {
         ['Costo de lo vendido', report.profitability.cost],
         ['Utilidad', report.profitability.profit],
         ['Utilidad sin promociones', report.profitability.profitWithoutPromotions],
+        ['Utilidad sin ningún descuento', report.profitability.profitWithoutDiscounts],
         ['Pérdida por vender bajo costo', -report.profitability.belowCostLoss],
       ]);
     }
@@ -118,6 +120,7 @@ export class ReportsService {
       ['Número de ventas', totals.count],
       ['Ventas canceladas', totals.cancelledCount],
       ['Ventas con promoción', report.promotions.salesWithPromotion],
+      ['Ventas con descuento en caja', report.discounts.salesWithDiscount],
     ] as const) {
       summary.addRow([label, value]).getCell(2).numFmt = '0';
     }
@@ -154,6 +157,23 @@ export class ReportsService {
       report.topProducts.map((p) => [p.name, p.quantity, p.unit, p.amount, p.discount, ...('profit' in p ? [p.profit] : [])]),
     );
 
+    const weekdayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const byWeekday = sheet('Por día de la semana', [
+      { header: 'Día', width: 14 },
+      { header: 'Ventas', width: 10 },
+      { header: 'Total', width: 16, money: true },
+      { header: 'Días en el periodo', width: 18 },
+      { header: 'Promedio por día', width: 18, money: true },
+    ]);
+    byWeekday.addRows(report.schedule.weekdays.map((d) => [weekdayNames[d.index], d.count, d.total, d.occurrences, d.averagePerDay ?? 0]));
+
+    const byHour = sheet('Por hora', [
+      { header: 'Hora', width: 12 },
+      { header: 'Ventas', width: 10 },
+      { header: 'Total', width: 16, money: true },
+    ]);
+    byHour.addRows(report.schedule.hours.filter((h) => h.count > 0).map((h) => [`${String(h.hour).padStart(2, '0')}:00`, h.count, h.total]));
+
     const promotions = sheet('Promociones', [
       { header: 'Promoción', width: 36 },
       { header: 'Ventas', width: 10 },
@@ -161,6 +181,17 @@ export class ReportsService {
       { header: 'Dejó de entrar sin IVA', width: 22, money: true },
     ]);
     promotions.addRows(report.promotions.rows.map((p) => [p.name, p.sales, p.units, p.discount]));
+
+    const discounts = sheet('Descuentos en caja', [
+      { header: 'Agrupado por', width: 14 },
+      { header: 'Nombre', width: 36 },
+      { header: 'Ventas', width: 10 },
+      { header: 'Descuento sin IVA', width: 20, money: true },
+    ]);
+    discounts.addRows([
+      ...report.discounts.byUser.map((r) => ['Cajero', r.name, r.sales, r.discount]),
+      ...report.discounts.byReason.map((r) => ['Motivo', r.reason, r.sales, r.discount]),
+    ]);
 
     if ('profitability' in report) {
       const below = sheet('Bajo costo', [

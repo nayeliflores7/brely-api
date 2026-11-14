@@ -186,3 +186,37 @@ describe('mailErrorMessage', () => {
     expect(mailErrorMessage({ code: 'EAUTH', response: '535 secreto' })).not.toContain('secreto');
   });
 });
+
+describe('correo diario: descuentos dados en caja', () => {
+  const manual = sale({
+    discount: 10,
+    manualDiscount: 10,
+    discountReason: 'PRODUCTO MALTRATADO',
+    createdByName: 'ANA',
+    items: [{ productId: 'p', name: 'REFRESCO', unit: 'pza', unitPrice: 20, unitCost: 6, quantity: 1, discount: 10, manualDiscount: 10, promotionName: null }],
+  });
+
+  it('con descuentos, lista cuánto, quién y por qué', () => {
+    const { html, text } = render({ report: report(true, [manual]) });
+
+    expect(html).toContain('Descuentos dados en caja');
+    expect(html).toContain('ANA');
+    expect(html).toContain('PRODUCTO MALTRATADO');
+    expect(text).toContain('Descuentos dados en caja: $10.00 en 1 ventas');
+    // No son promociones: esa sección no aparece
+    expect(html).not.toContain('Dejaron de entrar');
+  });
+
+  it('sin descuentos no ocupa lugar en el correo', () => {
+    const { html, text } = render({ report: report(true, [sale({ discount: 0, items: [{ productId: 'p', name: 'REFRESCO', unit: 'pza', unitPrice: 10, unitCost: 6, quantity: 1, discount: 0, promotionName: null }] })]) });
+
+    expect(html).not.toContain('Descuentos dados en caja');
+    expect(text).not.toContain('Descuentos dados en caja');
+  });
+
+  it('el motivo se escapa: no puede meter HTML en el correo', () => {
+    const { html } = render({ report: report(true, [sale({ ...manual, discountReason: '<b>x</b>' })]) });
+
+    expect(html).not.toContain('<b>x</b>');
+  });
+});

@@ -92,6 +92,25 @@ describe('RolesService.seedSystemRoles', () => {
     expect(updated[0].update).not.toHaveProperty('$pull');
   });
 
+  it('el permiso de descuentos: en un negocio existente solo llega al propietario', async () => {
+    const withoutDiscount = PERMISSIONS.filter((key) => key !== 'sales.discount');
+    const { service, created, updated } = setUp(['Propietario', 'Encargado', 'Cajero'], {
+      permissions: withoutDiscount,
+    });
+
+    await service.seedSystemRoles('t');
+
+    // El encargado y el cajero ya existen: se les activa en Roles, el seeder no los toca
+    expect(created).toEqual([]);
+    expect(updated).toHaveLength(1);
+    expect(updated[0].update.$addToSet.permissions.$each).toEqual(['sales.discount']);
+  });
+
+  it('el permiso de descuentos: en un negocio nuevo lo trae el encargado y no el cajero', () => {
+    expect(roleNamed('Encargado').permissions).toContain('sales.discount');
+    expect(roleNamed('Cajero').permissions).not.toContain('sales.discount');
+  });
+
   it('no escribe nada si al propietario no le falta ningún permiso', async () => {
     const { service, updated } = setUp(['Propietario', 'Encargado', 'Cajero'], {
       permissions: [...PERMISSIONS],
