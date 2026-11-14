@@ -4,6 +4,7 @@ Versiones con el formato MAYOR.MENOR.PARCHE. Cómo publicar una: ver "Versiones"
 
 ## Sin publicar
 
+- **Gastos fijos por semana o quincena.** Dos frecuencias nuevas: una semana pesa 4.33 veces al mes (52 semanas ÷ 12 meses) y una quincena, 2 veces.
 - **Cuándo se vende más.** El reporte de ventas trae el promedio por día de la semana y las ventas por hora (en la zona horaria del negocio), con el mejor día, los días más flojos, la hora más fuerte y la franja que concentra el 80 % de las ventas. El Excel agrega las hojas "Por día de la semana" y "Por hora".
 - **Utilidad por producto.** `GET /finance/products?period=month|last30|lastMonth` (permiso de ver las finanzas): cuánto vendió y cuánto dejó cada producto, su margen y su parte de la utilidad total; marca los que se vendieron por debajo de su costo y los que no tienen costo capturado.
 - **Finanzas.** Gastos fijos del negocio (renta, luz, sueldos...) con su frecuencia de pago, y un resumen con el punto de equilibrio (gastos fijos ÷ margen de utilidad de los últimos 30 días), el avance del mes, la utilidad estimada del mes y el valor del inventario. Dos permisos nuevos, **Ver las finanzas** y **Administrar gastos fijos**, solo para el Propietario por defecto: después de actualizar, reiniciar la API y ejecutar `npm run seed`. Los cambios a los gastos quedan en la auditoría.

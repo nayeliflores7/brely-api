@@ -3,12 +3,17 @@ import { priceLine } from '../common/money.js';
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const round1 = (n: number) => Math.round((n + Number.EPSILON) * 10) / 10;
 
-export type ExpenseFrequency = 'monthly' | 'bimonthly' | 'quarterly' | 'semiannual' | 'annual';
+export type ExpenseFrequency = 'weekly' | 'biweekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'semiannual' | 'annual';
 
-export const EXPENSE_FREQUENCIES = ['monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual'] as const;
+export const EXPENSE_FREQUENCIES = ['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual'] as const;
 
-/** Cada cuántos meses se paga. Un gasto anual pesa 1/12 cada mes. */
+/**
+ * Cada cuántos meses se paga. Un gasto anual pesa 1/12 cada mes. Una semana es 12/52 de mes (el año tiene 52 semanas)
+ * y una quincena, medio mes (24 quincenas al año).
+ */
 export const FREQUENCY_MONTHS: Record<ExpenseFrequency, number> = {
+  weekly: 12 / 52,
+  biweekly: 0.5,
   monthly: 1,
   bimonthly: 2,
   quarterly: 3,

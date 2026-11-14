@@ -18,6 +18,17 @@ describe('monthlyAmount', () => {
   it('redondea a centavos', () => {
     expect(monthlyAmount(100, 'quarterly')).toBe(33.33);
   });
+
+  it('una quincena pesa dos veces al mes', () => {
+    expect(monthlyAmount(1500, 'biweekly')).toBe(3000);
+    expect(monthlyAmount(1, 'biweekly')).toBe(2);
+  });
+
+  it('una semana pesa 52 / 12 veces al mes (4.33)', () => {
+    expect(monthlyAmount(1000, 'weekly')).toBe(4333.33);
+    expect(monthlyAmount(1200, 'weekly')).toBe(5200); // 1,200 × 52 semanas ÷ 12 meses
+    expect(monthlyAmount(300, 'weekly') * 12).toBeCloseTo(300 * 52, 0); // al año, lo mismo
+  });
 });
 
 describe('breakEven', () => {
