@@ -61,18 +61,18 @@ describe('catálogo de permisos', () => {
 });
 
 describe('RolesService.seedSystemRoles', () => {
-  it('crea los tres roles en un negocio nuevo, con el propietario primero', async () => {
+  it('crea los cuatro roles en un negocio nuevo, con el propietario primero', async () => {
     const { service, created } = setUp();
 
     const roles = await service.seedSystemRoles('t');
 
-    expect(created.map((role) => role.name)).toEqual(['Propietario', 'Encargado', 'Cajero']);
+    expect(created.map((role) => role.name)).toEqual(['Propietario', 'Encargado', 'Cajero', 'Empaquetador']);
     expect(created.every((role) => role.isSystem && role.tenantId === 't')).toBe(true);
     expect(roles[0].permissions).toEqual([...PERMISSIONS]);
   });
 
   it('en un negocio existente crea solo lo que falta y no cambia los otros roles', async () => {
-    const { service, created, updated } = setUp(['Encargado', 'Cajero']);
+    const { service, created, updated } = setUp(['Encargado', 'Cajero', 'Empaquetador']);
 
     await service.seedSystemRoles('t');
 
@@ -81,7 +81,7 @@ describe('RolesService.seedSystemRoles', () => {
   });
 
   it('el propietario existente recibe los permisos nuevos, sin quitarle ninguno', async () => {
-    const { service, created, updated } = setUp(['Propietario', 'Encargado', 'Cajero']);
+    const { service, created, updated } = setUp(['Propietario', 'Encargado', 'Cajero', 'Empaquetador']);
 
     await service.seedSystemRoles('t');
 
@@ -94,7 +94,7 @@ describe('RolesService.seedSystemRoles', () => {
 
   it('el permiso de descuentos: en un negocio existente solo llega al propietario', async () => {
     const withoutDiscount = PERMISSIONS.filter((key) => key !== 'sales.discount');
-    const { service, created, updated } = setUp(['Propietario', 'Encargado', 'Cajero'], {
+    const { service, created, updated } = setUp(['Propietario', 'Encargado', 'Cajero', 'Empaquetador'], {
       permissions: withoutDiscount,
     });
 
@@ -111,8 +111,39 @@ describe('RolesService.seedSystemRoles', () => {
     expect(roleNamed('Cajero').permissions).not.toContain('sales.discount');
   });
 
+  it('en un negocio existente, el seeder crea el Empaquetador que le falta', async () => {
+    const { service, created } = setUp(['Propietario', 'Encargado', 'Cajero']);
+
+    await service.seedSystemRoles('t');
+
+    expect(created.map((role) => role.name)).toEqual(['Empaquetador']);
+  });
+
+  it('el Empaquetador da de alta productos, ajusta precios e inventario, y no vende ni ve reportes', () => {
+    const packer = roleNamed('Empaquetador').permissions as readonly string[];
+
+    for (const key of ['admin.access', 'products.create', 'products.price', 'costs.view', 'stock.adjust', 'inventory.view']) {
+      expect(packer).toContain(key);
+    }
+    for (const key of ['products.manage', 'sales.create', 'sales.discount', 'reports.view', 'cash.operate', 'finance.view', 'users.manage']) {
+      expect(packer).not.toContain(key);
+    }
+  });
+
+  it('ajustar precios es un permiso aparte: el encargado lo trae y el cajero no', () => {
+    expect(PERMISSIONS).toContain('products.price');
+    expect(roleNamed('Encargado').permissions).toContain('products.price');
+    expect(roleNamed('Cajero').permissions).not.toContain('products.price');
+  });
+
+  it('todos los permisos del Empaquetador existen en el catálogo', () => {
+    for (const key of roleNamed('Empaquetador').permissions as readonly string[]) {
+      expect(PERMISSIONS).toContain(key);
+    }
+  });
+
   it('no escribe nada si al propietario no le falta ningún permiso', async () => {
-    const { service, updated } = setUp(['Propietario', 'Encargado', 'Cajero'], {
+    const { service, updated } = setUp(['Propietario', 'Encargado', 'Cajero', 'Empaquetador'], {
       permissions: [...PERMISSIONS],
     });
 

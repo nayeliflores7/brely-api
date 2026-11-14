@@ -47,6 +47,18 @@ export class CreateProductWithStockDto extends CreateProductDto {
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {}
 
+// Ajustar precios: solo estos tres campos, el resto del producto no se toca
+export class AdjustPriceDto {
+  @IsOptional() @IsNumber() @Min(0)
+  price?: number;
+
+  @IsOptional() @IsNumber() @Min(0)
+  cost?: number;
+
+  @IsOptional() @IsNumber() @Min(0) @Max(1)
+  taxRate?: number;
+}
+
 // Lo que llega en el payload del outbox (el id lo genera el POS)
 export class ProductPushDto extends CreateProductDto {
   @IsString() @MaxLength(64)

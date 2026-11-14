@@ -1,8 +1,8 @@
 import {
-  Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query,
+  Body, Controller, Delete, ForbiddenException, Get, HttpCode, Param, Patch, Post, Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service.js';
-import { CreateProductWithStockDto, ListProductsQuery, UpdateProductDto } from './dto/product.dto.js';
+import { AdjustPriceDto, CreateProductWithStockDto, ListProductsQuery, UpdateProductDto } from './dto/product.dto.js';
 import { CurrentUser, RequirePermissions, TenantId } from '../common/decorators.js';
 import type { AuthUser } from '../common/auth.types.js';
 
@@ -13,6 +13,13 @@ function forViewer<T extends { cost: number }>(product: T, user: AuthUser): T {
     user.permissions.includes('costs.view') ||
     user.permissions.includes('products.manage');
   return seesCosts ? product : { ...product, cost: 0 };
+}
+
+// Ajustar precios: quien administra productos o quien tiene el permiso propio. El super admin siempre puede.
+function assertCanAdjustPrice(user: AuthUser) {
+  const allowed =
+    user.isSuperAdmin || user.permissions.includes('products.manage') || user.permissions.includes('products.price');
+  if (!allowed) throw new ForbiddenException('Missing permissions');
 }
 
 @Controller('products')
@@ -35,9 +42,27 @@ export class ProductsController {
   }
 
   @Get(':id/price-history')
-  @RequirePermissions('products.manage')
-  priceHistory(@TenantId() tenantId: string, @Param('id') id: string) {
+  priceHistory(@TenantId() tenantId: string, @CurrentUser() u: AuthUser, @Param('id') id: string) {
+    assertCanAdjustPrice(u);
     return this.products.priceHistory(tenantId, id);
+  }
+
+  // Solo precio, costo e IVA: no deja tocar nada más del producto
+  @Patch(':id/price')
+  adjustPrice(
+    @TenantId() tenantId: string,
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AdjustPriceDto,
+  ) {
+    assertCanAdjustPrice(u);
+    const { price, cost, taxRate } = dto;
+    return this.products.update(
+      tenantId,
+      id,
+      { ...(price !== undefined && { price }), ...(cost !== undefined && { cost }), ...(taxRate !== undefined && { taxRate }) },
+      { userId: u.id },
+    );
   }
 
   @Post()

@@ -23,6 +23,7 @@ export const PERMISSION_CATALOG = [
   { key: 'cash.movements', scope: 'pos', name: 'Movimientos de efectivo', description: 'Registrar entradas y salidas de efectivo' },
   { key: 'products.create', scope: 'pos', name: 'Crear productos', description: 'Dar de alta productos nuevos' },
   { key: 'products.manage', scope: 'pos', name: 'Administrar productos', description: 'Editar y eliminar productos' },
+  { key: 'products.price', scope: 'pos', name: 'Ajustar precios', description: 'Cambiar el precio, el costo y el IVA de un producto, sin poder editarlo ni eliminarlo' },
   { key: 'stock.adjust', scope: 'pos', name: 'Ajustar inventario', description: 'Registrar compras, mermas y ajustes de stock' },
   { key: 'inventory.view', scope: 'pos', name: 'Ver inventario', description: 'Consultar existencias y movimientos' },
   { key: 'catalogs.manage', scope: 'pos', name: 'Administrar catálogos', description: 'Editar categorías y unidades' },
@@ -63,5 +64,10 @@ export const SYSTEM_ROLES: readonly {
     name: 'Cajero',
     description: 'Vende, cobra y hace el corte de caja',
     permissions: ['sales.create', 'sales.cancel', 'cash.operate', 'cash.movements', 'inventory.view'],
+  },
+  {
+    name: 'Empaquetador',
+    description: 'Da de alta productos, les pone precio, ajusta el inventario e imprime etiquetas',
+    permissions: ['admin.access', 'products.create', 'products.price', 'costs.view', 'inventory.view', 'stock.adjust'],
   },
 ];
