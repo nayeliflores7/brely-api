@@ -142,6 +142,8 @@ npm run start:prod
 
 La rama `develop` se despliega sola en Render (plan gratuito) con el archivo [render.yaml](render.yaml); `main` no se despliega todavía. El ambiente de nube de pruebas muestra **DEV** junto a la versión en el panel y en el POS (variable `APP_ENV=DEV`).
 
+Ramas: `develop` es la nube de pruebas; `main` es producción y todavía no se despliega. El POS se publica solo desde `main` (ver "Ambientes y ramas" en el README de `brely-pos`).
+
 Primera vez, en este orden:
 
 1. **Atlas:** en el mismo clúster, usa la base `brely-develop` (se crea sola al primer uso). Crea un usuario de base de datos exclusivo, con rol *readWrite* solo sobre esa base. En **Network Access** permite `0.0.0.0/0`: Render gratis no tiene IP fija.
