@@ -28,7 +28,7 @@ services:
       # Base brely-develop de Atlas, con su propio usuario
       - key: MONGO_URI
         sync: false
-      # Dirección del panel de pruebas, sin diagonal final (https://brely-panel-dev.pages.dev)
+      # Dirección del panel de pruebas, sin diagonal final (https://brely-webadmin.TU-SUBDOMINIO.workers.dev)
       - key: CORS_ORIGINS
         sync: false
       - key: PANEL_URL
