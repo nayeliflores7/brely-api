@@ -1,4 +1,5 @@
-import { IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsBusinessHours, MAX_WARNING_MINUTES, type BusinessHours } from '../business-hours.js';
 
 export const DEFAULT_TENANT_SETTINGS = {
   ticketFooter: 'GRACIAS POR SU COMPRA',
@@ -24,4 +25,12 @@ export class TenantSettingsDto {
   // Inicio de los códigos que genera el sistema: VEN-7K3M9Q2X
   @IsOptional() @Matches(/^[A-Z0-9]{1,6}$/)
   barcodePrefix?: string;
+
+  // Horario de atención: siete días (lunes a domingo), cada uno con sus bloques. El POS avisa al terminar el último.
+  @IsOptional() @IsBusinessHours()
+  businessHours?: BusinessHours;
+
+  // Cuántos minutos antes del cierre el POS avisa; 0 para no avisar antes
+  @IsOptional() @IsInt() @Min(0) @Max(MAX_WARNING_MINUTES)
+  closingWarningMinutes?: number;
 }

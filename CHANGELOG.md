@@ -4,6 +4,7 @@ Versiones con el formato MAYOR.MENOR.PARCHE. Cómo publicar una: ver "Versiones"
 
 ## Sin publicar
 
+- **Horario de atención y aviso de cierre.** Los ajustes del negocio guardan el horario de cada día de la semana, con varios bloques por día, y los minutos de aviso antes del cierre. Se validan (siete días, el cierre después de la apertura dentro del mismo día, bloques en orden y sin traslaparse) y llegan a las terminales al sincronizar.
 - **El ambiente en `/version`.** Responde también `env`: lo que diga `APP_ENV` ("DEV" en la nube de pruebas) y, sin ella, "DEV" salvo que `NODE_ENV=production`. Vacío en producción.
 - **Despliegue de pruebas en Render.** `render.yaml` despliega la rama `develop` con el plan gratuito, con `APP_ENV=DEV` y sus propias variables.
 - **Rol Empaquetador y permiso "Ajustar precios".** Nuevo rol base para quien prepara paquetes de producto a granel: da de alta productos con precio y costo, cambia precios, ajusta el inventario, ve los costos e imprime etiquetas; no vende ni ve reportes. Cambiar el precio, el costo o el IVA es ahora un permiso propio (`products.price`) que no deja editar ni eliminar productos; quien administra productos sigue pudiendo. Ruta nueva `PATCH /products/:id/price`. Después de actualizar, reiniciar la API y ejecutar `npm run seed`: crea el rol Empaquetador en cada negocio. Al Encargado y a otros roles ya existentes se les activa "Ajustar precios" en Roles si lo necesitan.
