@@ -35,6 +35,8 @@ export class Tenant {
     printTicket?: 'ask' | 'always' | 'never';
     paperWidth?: 58 | 80;
     barcodePrefix?: string;
+    businessHours?: { from: string; to: string }[][];
+    closingWarningMinutes?: number;
   };
 
   @Prop({ type: Date, default: null })
